@@ -1,9 +1,9 @@
 import axios from "axios";
 import { ethers } from "ethers";
 import erc721Abi from "./abis/erc721.json";
-import { calculateBlockRanges } from "./helper";
-import Bottleneck from "bottleneck";
-import { Presets, SingleBar } from "cli-progress";
+import { logger } from ".";
+
+const nftIface = new ethers.Interface(erc721Abi);
 
 export type TransferLog = {
   blockNumber: number;
@@ -12,24 +12,22 @@ export type TransferLog = {
   tokenId: string;
 };
 
-// cronos
-const SCAN_URL = "https://cronos-explorer.crypto.org/api";
-const API_KEY = "P47G6IFFMV796BAVGUF2EA3GZNSXM2CFHU";
-const nftIface = new ethers.Interface(erc721Abi);
-
-async function getLogs(contractAddress: string, fromBlock: number, toBlock: number) {
+async function getLogs(contractAddress: string, fromBlock: number, toBlock?: number): Promise<TransferLog[]> {
   const params = {
     module: 'logs',
     action: 'getLogs',
     fromBlock: fromBlock.toString(),
-    toBlock: toBlock.toString(),
+    toBlock: toBlock?.toString() || 'latest',
     address: contractAddress,
     topic0: nftIface.getEvent('Transfer').topicHash,
-    apikey: API_KEY,
+    apikey: process.env.API_KEY,
+    sort: 'asc',
   };
 
-  // get logs from contract eve
-  const { data } = await axios.get(SCAN_URL, { params });
+  const { data } = await axios.get(process.env.SCAN_URL, { params }).catch((err) => {
+    logger.error(err);
+    throw err;
+  });
 
   if (+data.status === 0) {
     if (['No records found', 'No logs found'].includes(data?.message)) {
@@ -52,53 +50,33 @@ async function getLogs(contractAddress: string, fromBlock: number, toBlock: numb
   return logs;
 }
 
-async function getBlockNumbers(contractAddress: string): Promise<number[]> {
-  const params = {
-    module: 'account',
-    action: 'txlist',
-    address: contractAddress,
-    startblock: '0',
-    endblock: 'latest',
-    apikey: API_KEY,
-  };
+export async function getAllTransferLogs(
+  contractAddress: string,
+  fromBlock = 0,
+): Promise<TransferLog[]> {
+  let startBlock = fromBlock;
+  let endBlock = process.env.SNAPSHOT_AT ? +process.env.SNAPSHOT_AT : undefined;
 
-  const { data } = await axios.get(SCAN_URL, { params });
-  const blockNumbers: number[] = data.result.map((tx) => +tx.blockNumber);
-  const uniqueBlockNumbers = [...new Set(blockNumbers)];
-  return uniqueBlockNumbers.sort((a: number, b: number) => a - b);
-}
+  logger.info(`Getting logs from ${startBlock} to ${endBlock}`);
 
-export async function getAllTransferLogs(contractAddress: string, trigger: (log: TransferLog) => void) {
-  const blockNumbers = await getBlockNumbers(contractAddress);
-  const ranges = calculateBlockRanges(blockNumbers, 1000);
+  const logs = [];
 
-  const limiter = new Bottleneck({
-    minTime: 400, // ~2 req/sec
-  });
+  while (true) {
+    const newLogs = await getLogs(contractAddress, startBlock, endBlock);
+    if (newLogs.length === 0) {
+      break;
+    }
 
-  const wrappedGetLogs = limiter.wrap(getLogs);
+    logs.push(...newLogs);
 
-  const progressBar = new SingleBar(
-    {
-      format: 'Get contract logs [{bar}] {percentage}% | ETA: {eta_formatted} | {value}/{total}',
-      clearOnComplete: true,
-    },
-    Presets.legacy,
-  );
+    const minBlock = newLogs[0].blockNumber;
+    const maxBlock = newLogs[newLogs.length - 1].blockNumber;
 
-  progressBar.start(ranges.length, 0);
+    logger.info(`Got ${newLogs.length} logs, next block: ${startBlock}`);
+    logger.info(`Min block: ${minBlock}, max block: ${maxBlock}, diff: ${maxBlock - minBlock}`);
 
-  const logs = await Promise.all(
-    ranges.map(async (range) => {
-      const logs = await wrappedGetLogs(contractAddress, range.fromBlock, range.toBlock);
-      logs.forEach(trigger);
+    startBlock = newLogs[newLogs.length - 1].blockNumber + 1;
+  }
 
-      progressBar.increment();
-      return logs;
-    })
-  );
-
-  progressBar.stop();
-
-  return logs.flat() as TransferLog[];
+  return logs;
 }
