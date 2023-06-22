@@ -34,10 +34,10 @@ pm2 logs
 - Update `configs` collection in mongodb to add new NFT contract address for fetching data
 - After fetching data, it will be saved to `nfts` collection in mongodb
 
-<<<<<<< HEAD
 ## TODO:
 - [ ] Add many configs at once to check it works
 - [ ] Add api to get configs and nfts data
+- [ ] Support nft ownership data
 
 ## Diagram
 
