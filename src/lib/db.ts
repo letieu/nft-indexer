@@ -24,7 +24,8 @@ export const getMongoClient = (() => {
     }
 
     logger.info("Connecting to mongo");
-    client = await MongoClient.connect(process.env.MONGO_URL)
+    console.log(process.env.MONGODB_URI)
+    client = await MongoClient.connect(process.env.MONGODB_URI)
 
     return client.db(process.env.MONGO_DB);
   }
