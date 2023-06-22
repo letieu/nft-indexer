@@ -25,6 +25,7 @@ export const getMongoClient = (() => {
 
     logger.info("Connecting to mongo");
     client = await MongoClient.connect(process.env.MONGODB_URI)
+    logger.info("Connected to mongo");
 
     return client.db(process.env.MONGODB_DATABASE);
   }
@@ -101,7 +102,11 @@ export async function markIndexRunning(address: string) {
     {
       $set: {
         running: true,
+        address: getAddress(address),
       },
+    },
+    {
+      upsert: true,
     }
   );
 }

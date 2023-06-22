@@ -15,6 +15,7 @@ metadataQueue.process(async (job, done) => {
   logger.info(` ==================== Processing job ${job.id} ====================`);
 
   const { tokenAddress, tokenId, uri } = job.data;
+  logger.info(`tokenAddress: ${tokenAddress}, tokenId: ${tokenId}, uri: ${uri}`);
   const db = await getMongoClient();
 
   const metadata = await getMetadata(uri);
@@ -30,8 +31,20 @@ metadataQueue.process(async (job, done) => {
       },
     }
   );
+});
 
-  logger.info(`==================== Finished processing job ${job.id} ====================`);
+metadataQueue.on('succeeded', (job, result) => {
+  logger.info(`==================== succeeded processing job ${job.id} ====================`);
+});
+
+metadataQueue.on('failed', (job, err) => {
+  logger.info(`==================== failed processing job ${job.id} ====================`);
+  logger.error(err);
+});
+
+metadataQueue.on('retrying', (job, error) => {
+  logger.info(`==================== retrying processing job ${job.id} ====================`);
+  logger.error(error);
 });
 
 logger.info(`Waiting for jobs in ${QueueNames.METADATA}`);

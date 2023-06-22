@@ -34,7 +34,10 @@ mintQueue.process(async (job, done) => {
         tokenAddress: nft.tokenAddress,
         tokenId: nft.tokenId,
         uri: nft.uri,
-      }).save();
+      })
+      .timeout(1000 * 60) // 1 minute
+      .retries(2)
+      .save();
     }));
   }
 
