@@ -1,16 +1,18 @@
 import axios from "axios";
-import { ethers } from "ethers";
-import erc721Abi from "./abis/erc721.json";
-import { logger } from ".";
-
-const nftIface = new ethers.Interface(erc721Abi);
+import { erc721Iface, getErc721Contract } from "./contract";
+import { logger } from "./logger";
 
 export type TransferLog = {
   blockNumber: number;
   from: string;
   to: string;
   tokenId: string;
-};
+  uri?: string; };
+
+export async function getMetadata(uri: string) {
+  const { data } = await axios.get(uri);
+  return data;
+}
 
 async function getLogs(contractAddress: string, fromBlock: number, toBlock?: number): Promise<TransferLog[]> {
   const params = {
@@ -19,7 +21,8 @@ async function getLogs(contractAddress: string, fromBlock: number, toBlock?: num
     fromBlock: fromBlock.toString(),
     toBlock: toBlock?.toString() || 'latest',
     address: contractAddress,
-    topic0: nftIface.getEvent('Transfer').topicHash,
+    topic0: erc721Iface.getEvent('Transfer').topicHash,
+    topic1: "0x0000000000000000000000000000000000000000000000000000000000000000", // only get new minted nft
     apikey: process.env.API_KEY,
     sort: 'asc',
   };
@@ -37,15 +40,24 @@ async function getLogs(contractAddress: string, fromBlock: number, toBlock?: num
     }
   }
 
-  const logs = data.result.map((log) => {
-    const decoded = nftIface.decodeEventLog('Transfer', log.data, log.topics);
+  const contract = getErc721Contract(contractAddress);
+
+  const logs = await Promise.all(data.result.map(async (log) => {
+    const decoded = erc721Iface.decodeEventLog('Transfer', log.data, log.topics);
+
+    const uri = await contract.tokenURI(decoded.tokenId).catch((err) => {
+      logger.error(err);
+      return undefined;
+    });
+
     return {
       blockNumber: +log.blockNumber,
       from: decoded.from,
       to: decoded.to,
       tokenId: decoded.tokenId.toString(),
+      uri,
     };
-  });
+  }));
 
   return logs;
 }
@@ -56,8 +68,6 @@ export async function getAllTransferLogs(
 ): Promise<TransferLog[]> {
   let startBlock = fromBlock;
   let endBlock = process.env.SNAPSHOT_AT ? +process.env.SNAPSHOT_AT : undefined;
-
-  logger.info(`Getting logs from ${startBlock} to ${endBlock}`);
 
   const logs = [];
 
@@ -72,8 +82,7 @@ export async function getAllTransferLogs(
     const minBlock = newLogs[0].blockNumber;
     const maxBlock = newLogs[newLogs.length - 1].blockNumber;
 
-    logger.info(`Got ${newLogs.length} logs, next block: ${startBlock}`);
-    logger.info(`Min block: ${minBlock}, max block: ${maxBlock}, diff: ${maxBlock - minBlock}`);
+    logger.info(`Min block: ${minBlock}, max block: ${maxBlock}, diff: ${maxBlock - minBlock}, total: ${logs.length}`);
 
     startBlock = newLogs[newLogs.length - 1].blockNumber + 1;
   }

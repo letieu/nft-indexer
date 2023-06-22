@@ -1,0 +1,21 @@
+version: '3.8'
+
+networks:
+  indexer:
+    name: indexer
+
+services:
+  redis:
+    image: bitnami/redis:7.0
+    container_name: indexer_redis
+    networks:
+      - indexer
+    volumes:
+      - ./data/redis:/bitnami/redis/data
+    env_file:
+      - .env
+    ports:
+      - '${REDIS_PORT}:6379'
+    environment:
+      - 'REDIS_PASSWORD=${REDIS_PASSWORD}'
+

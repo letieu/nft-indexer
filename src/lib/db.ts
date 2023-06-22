@@ -1,7 +1,15 @@
 import { MongoClient } from "mongodb";
-import { Nft, logger } from ".";
 import { TransferLog } from "./scan";
 import { getAddress } from "ethers";
+import { logger } from "./logger";
+
+export type Nft = {
+  tokenId: string;
+  tokenAddress: string;
+  creator: string;
+  uri?: string;
+  metadata?: any;
+};
 
 const CONFIG_COLLECTION = "configs";
 const NFT_COLLECTION = "nfts";
@@ -22,7 +30,6 @@ export const getMongoClient = (() => {
 })()
 
 export async function updateNfts(nfts: Map<string, Nft>) {
-  logger.info(`Updating ${nfts.size} nfts to db`);
   const client = await getMongoClient();
   await Promise.all(
     Array.from(nfts.values()).map(async (nft) => {
@@ -33,9 +40,10 @@ export async function updateNfts(nfts: Map<string, Nft>) {
         },
         {
           $set: {
-            owner: nft.owner,
+            creator: nft.creator,
             tokenAddress: getAddress(nft.tokenAddress),
             tokenId: nft.tokenId,
+            uri: nft.uri,
           },
         },
         {
@@ -44,6 +52,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
       );
     })
   );
+  logger.info(`Updated ${nfts.size} nfts to db`);
 }
 
 export async function updateTransferLogs(logs: TransferLog[]) {
@@ -52,8 +61,7 @@ export async function updateTransferLogs(logs: TransferLog[]) {
   await client.collection(TRANSFER_COLLECTION).insertMany(logs);
 }
 
-export async function updateIndexPoint(address: string, logs: TransferLog[]) {
-  logger.info(`Updating index point for ${address}`);
+export async function updateIndexPoint(address: string, blockNumber: number) {
   const client = await getMongoClient();
   await client.collection(CONFIG_COLLECTION).updateOne(
     {
@@ -61,18 +69,38 @@ export async function updateIndexPoint(address: string, logs: TransferLog[]) {
     },
     {
       $set: {
-        indexPoint: logs[logs.length - 1].blockNumber,
+        indexPoint: blockNumber,
+        running: false,
       },
     }
   );
+  logger.info(`Updated index point of ${address} to ${blockNumber}`);
 }
 
-export async function getConfigs() {
+export async function getCollectionConfigs() {
   const client = await getMongoClient();
 
   const configs = await client.collection(CONFIG_COLLECTION).find({
-    full: false,
+    full: false, // don't need index full collection
+    running: {
+      $ne: true,
+    }
   }).toArray();
 
   return configs;
+}
+
+export async function markIndexRunning(address: string) {
+  const client = await getMongoClient();
+
+  await client.collection(CONFIG_COLLECTION).updateOne(
+    {
+      address,
+    },
+    {
+      $set: {
+        running: true,
+      },
+    }
+  );
 }
