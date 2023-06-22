@@ -36,6 +36,7 @@ pm2 logs
 
 ## TODO:
 - [ ] Add many configs at once to check it works
+- [ ] Update getMetadata function to support more types of link
 - [ ] Add api to get configs and nfts data
 - [ ] Support nft ownership data
 
