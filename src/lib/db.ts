@@ -11,9 +11,9 @@ export type Nft = {
   metadata?: any;
 };
 
-const CONFIG_COLLECTION = "configs";
-const NFT_COLLECTION = "nfts";
-const TRANSFER_COLLECTION = "transfers";
+export const CONFIG_COLLECTION = "configs";
+export const NFT_COLLECTION = "nfts";
+export const TRANSFER_COLLECTION = "transfers";
 
 export const getMongoClient = (() => {
   let client: MongoClient | null = null;
@@ -23,6 +23,7 @@ export const getMongoClient = (() => {
       return client.db(process.env.MONGO_DB);
     }
 
+    logger.info("Connecting to mongo");
     client = await MongoClient.connect(process.env.MONGO_URL)
 
     return client.db(process.env.MONGO_DB);

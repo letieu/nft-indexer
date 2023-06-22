@@ -14,6 +14,12 @@ export type MintData = {
   fromBlock: number;
 }
 
+export type MetadataData = {
+  tokenAddress: string;
+  tokenId: string;
+  uri: string;
+}
+
 export enum QueueNames {
   MINT = 'mint',
   METADATA = 'metadata',
