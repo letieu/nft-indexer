@@ -1,4 +1,23 @@
-# Jobs
-- index new NFT minted -> from index point to now
-- load metadata for new NFT -> when new NFT added
-- update owner for new NFT -> each block
+# Load NFTs data from evm blockchain to mongodb
+
+## Install
+
+Requires:
+
+- [pnpm](https://pnpm.io/installation)
+- [pm2](https://pm2.keymetrics.io/docs/usage/quick-start/)
+- [mongodb](https://docs.mongodb.com/manual/installation/)
+- [redis](https://redis.io/topics/quickstart)
+
+```bash
+# 1. install dependencies
+pnpm i
+
+# 2. update .env file
+
+# 3. build
+pnpm build
+
+# 4. run
+pm2 start ecosystem.config.js
+```

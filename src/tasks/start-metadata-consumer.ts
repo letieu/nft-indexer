@@ -34,5 +34,5 @@ metadataQueue.process(async (job, done) => {
   logger.info(`==================== Finished processing job ${job.id} ====================`);
 });
 
-logger.info(`Waiting for jobs in ${QueueNames.MINT}`);
+logger.info(`Waiting for jobs in ${QueueNames.METADATA}`);
 
