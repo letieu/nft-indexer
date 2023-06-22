@@ -20,14 +20,13 @@ export const getMongoClient = (() => {
 
   return async () => {
     if (client) {
-      return client.db(process.env.MONGO_DB);
+      return client.db(process.env.MONGODB_DATABASE);
     }
 
     logger.info("Connecting to mongo");
-    console.log(process.env.MONGODB_URI)
     client = await MongoClient.connect(process.env.MONGODB_URI)
 
-    return client.db(process.env.MONGO_DB);
+    return client.db(process.env.MONGODB_DATABASE);
   }
 })()
 
