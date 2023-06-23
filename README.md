@@ -18,21 +18,25 @@ pnpm i
 # 2. update .env file
 cp .env.example .env
 
-# 3. build
-pnpm build
-
 # 3.5. start mongodb and redis with docker-compose (optional)
 docker-compose up -d
 
-# 4. run
-pm2 start ecosystem.config.js
+# 4. start consumer
+ts-node src/consumers/mint-consumer.ts
+ts-node src/consumers/metadata-consumer.ts
 
-# 5. check logs
-pm2 logs
+# 5. trigger
+# use command line
+ts-node src/triggers/command.ts collection check <collection_address> # check new nfts in collection
+ts-node src/triggers/command.ts collection check-all # check all new nfts in all collections with config.full = false
+
+# use api
+# start api server
+ts-node src/api/index.ts
 ```
 
-- Update `configs` collection in mongodb to add new NFT contract address for fetching data
 - After fetching data, it will be saved to `nfts` collection in mongodb
+- You can use command line or api to trigger fetching, check config, queue status. Run `ts-node src/triggers/command.ts --help` to see more details
 
 ## TODO:
 - [ ] Add many configs at once to check it works
