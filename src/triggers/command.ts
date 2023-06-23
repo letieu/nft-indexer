@@ -1,5 +1,6 @@
 import { logger } from "../lib/logger";
 import { QueueNames } from "../lib/queue";
+import createApiKey from "./functions/auth";
 import { checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne } from "./functions/collection";
 import { destroyQueue, getQueueReport } from "./functions/queue-manage";
 import { program } from 'commander';
@@ -43,11 +44,11 @@ collectionCommand
   .command('update-metadata [address] [id]')
   .option('-f, --force', 'Force update metadata')
   .description('Update metadata for collection')
-  .action((address: string, id: string) => {
+  .action((address: string, id: string, options: { force: boolean }) => {
     if (id) {
       runTask(() => updateMetadataOne(address, id));
     } else {
-      runTask(() => updateMetadataAll(address));
+      runTask(() => updateMetadataAll(address, options.force));
     }
   });
 
@@ -70,6 +71,16 @@ queueCommand
     }
     const res = await destroyQueue(name as QueueNames);
     console.log(res);
+  });
+
+// ==================== AUTH ====================
+const authCommand = program.command('auth');
+authCommand
+  .command('create <key-id>')
+  .description('Create new API key')
+  .action(async (keyId: string) => {
+    const res = await createApiKey(keyId);
+    console.log(res.token);
   });
 
 program.parse(process.argv);

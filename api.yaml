@@ -1,0 +1,126 @@
+openapi: 3.0.1
+info:
+  title: HTTP Server API
+  version: 1.0.0
+
+paths:
+  /collections:
+    get:
+      tags:
+      - Collections
+      summary: Get all collections
+      responses:
+        200:
+          description: OK
+          content: {}
+    post:
+      tags:
+      - Collections
+      summary: Create job for all collections
+      responses:
+        200:
+          description: OK
+          content: {}
+        401:
+          description: Unauthorized
+          content: {}
+      security:
+      - bearerAuth: []
+  /collections/{address}:
+    post:
+      tags:
+      - Collections
+      summary: Create job for a specific collection
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content: {}
+        401:
+          description: Unauthorized
+          content: {}
+      security:
+      - bearerAuth: []
+  /metadata/refresh/{address}:
+    post:
+      tags:
+      - Metadata
+      summary: Create job to refresh metadata for a collection
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content: {}
+        401:
+          description: Unauthorized
+          content: {}
+      security:
+      - bearerAuth: []
+  /metadata/refresh/{address}/{id}:
+    post:
+      tags:
+      - Metadata
+      summary: Create job to refresh metadata for a specific item in a collection
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content: {}
+        401:
+          description: Unauthorized
+          content: {}
+      security:
+      - bearerAuth: []
+  /queues:
+    get:
+      tags:
+      - Queue Management
+      summary: Get queue report
+      responses:
+        200:
+          description: OK
+          content: {}
+  /queses/{name}:
+    delete:
+      tags:
+      - Queue Management
+      summary: Destroy a queue
+      parameters:
+      - name: name
+        in: path
+        description: Queue name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content: {}
+      security:
+      - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT  # optional, for documentation purposes only
