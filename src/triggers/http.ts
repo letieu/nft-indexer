@@ -9,6 +9,7 @@ import passport from 'koa-passport';
 import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import yamljs from 'yamljs';
 import { koaSwagger } from 'koa2-swagger-ui';
+import 'dotenv/config';
 
 passport.use(new JwtStrategy({
   secretOrKey: process.env.JWT_SECRET,
@@ -21,7 +22,7 @@ passport.use(new JwtStrategy({
 const spec = yamljs.load('api.yaml');
 
 const app = new Koa();
-const port = 3000;
+const port = process.env.HTTP_PORT || 3000;
 
 const router = new Router();
 
@@ -42,18 +43,6 @@ router.post('/collections/all', (ctx, next) => {
     };
   })(ctx, next);
 });
-
-// collectionCommand
-//   .command('update-metadata [address] [id]')
-//   .option('-f, --force', 'Force update metadata')
-//   .description('Update metadata for collection')
-//   .action((address: string, id: string, options: { force: boolean }) => {
-//     if (id) {
-//       runTask(() => updateMetadataOne(address, id));
-//     } else {
-//       runTask(() => updateMetadataAll(address, options.force));
-//     }
-//   });
 
 router.post('/collections/:address', async (ctx, next) => {
   return passport.authenticate('jwt', { session: false }, async (err, user) => {
