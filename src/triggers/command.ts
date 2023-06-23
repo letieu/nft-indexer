@@ -1,6 +1,6 @@
 import { logger } from "../lib/logger";
 import { QueueNames } from "../lib/queue";
-import { checkAllCollection, checkCollection, listCollection } from "./functions/collection";
+import { checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne } from "./functions/collection";
 import { destroyQueue, getQueueReport } from "./functions/queue-manage";
 import { program } from 'commander';
 
@@ -15,6 +15,7 @@ async function runTask(task: () => Promise<void>) {
   }
 }
 
+// ==================== COLLECTION ====================
 const collectionCommand = program.command('collection');
 collectionCommand
   .command('list')
@@ -38,6 +39,19 @@ collectionCommand
     runTask(checkAllCollection);
   });
 
+collectionCommand
+  .command('update-metadata [address] [id]')
+  .option('-f, --force', 'Force update metadata')
+  .description('Update metadata for collection')
+  .action((address: string, id: string) => {
+    if (id) {
+      runTask(() => updateMetadataOne(address, id));
+    } else {
+      runTask(() => updateMetadataAll(address));
+    }
+  });
+
+// ==================== QUEUE ====================
 const queueCommand = program.command('queue');
 queueCommand
   .command('list')

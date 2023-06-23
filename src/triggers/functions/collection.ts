@@ -1,9 +1,11 @@
 import { logger } from "../../lib/logger";
-import { MintData, QueueNames, queueOptions } from "../../lib/queue";
+import { MetadataData, MintData, QueueNames, queueOptions } from "../../lib/queue";
 import { CONFIG_COLLECTION, NFT_COLLECTION, getCollectionConfigs, getMongoClient, markIndexRunning } from "../../lib/db";
 import Queue from 'bee-queue';
+import { getAddress } from "ethers";
 
 const mintQueue = new Queue<MintData>(QueueNames.MINT, queueOptions);
+const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
 
 /*
  * Add jobs for all collections to index new nft minted
@@ -63,7 +65,7 @@ export async function listCollection() {
           $sum: {
             $cond: {
               if: {
-                $ne: ['$uri', null],
+                $eq: [{ $type: '$uri' }, 'string'],
               },
               then: 1,
               else: 0,
@@ -74,7 +76,7 @@ export async function listCollection() {
           $sum: {
             $cond: {
               if: {
-                $ne: ['$metadata', null],
+                $eq: [{ $type: '$metadata' }, 'object'],
               },
               then: 1,
               else: 0,
@@ -102,3 +104,58 @@ export async function listCollection() {
     };
   });
 }
+
+export async function updateMetadataAll(address: string, force = false) {
+  logger.info(`Updating metadata for collection ${address}`);
+  const client = await getMongoClient();
+
+  const filter = {
+    tokenAddress: address,
+  }
+
+  if (!force) {
+    filter['metadata'] = {
+      $exists: false,
+    }
+  }
+
+  const nfts = await client.collection(NFT_COLLECTION).find(filter).toArray();
+
+  logger.info(`Found ${nfts.length} NFTs`);
+
+  for await (const nft of nfts) {
+    const job = metadataQueue.createJob({
+      tokenAddress: address,
+      tokenId: nft.tokenId,
+      uri: nft.uri,
+    });
+
+    await job.save();
+  }
+
+  logger.info(`Created ${nfts.length} jobs`);
+}
+
+export async function updateMetadataOne(address: string, tokenId: string) {
+  const client = await getMongoClient();
+
+  const nft = await client.collection(NFT_COLLECTION).findOne({
+    tokenAddress: getAddress(address),
+    tokenId,
+  });
+
+  if (!nft) {
+    throw new Error('NFT not found');
+  }
+
+  const job = metadataQueue.createJob({
+    tokenAddress: address,
+    tokenId: nft.tokenId,
+    uri: nft.uri,
+  });
+
+  await job.save();
+  logger.info(`Created job for ${address} ${tokenId}, ID: ${job.id}`);
+}
+
+

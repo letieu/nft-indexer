@@ -14,3 +14,12 @@ export function getNftsFromLogs(logs: TransferLog[], address: string) {
   return nfts;
 }
 
+export function getUriLink(rawUri: string) {
+  let uri = rawUri;
+
+  if (uri.startsWith("ipfs://")) {
+    uri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
+  }
+
+  return uri;
+}

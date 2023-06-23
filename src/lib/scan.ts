@@ -1,6 +1,7 @@
 import axios from "axios";
 import { erc721Iface, getErc721Contract } from "./contract";
 import { logger } from "./logger";
+import { getUriLink } from "./helper";
 
 export type TransferLog = {
   blockNumber: number;
@@ -10,7 +11,7 @@ export type TransferLog = {
   uri?: string; };
 
 export async function getMetadata(uri: string) {
-  const { data } = await axios.get(uri);
+  const { data } = await axios.get(getUriLink(uri));
   return data;
 }
 

@@ -46,6 +46,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
             tokenAddress: getAddress(nft.tokenAddress),
             tokenId: nft.tokenId,
             uri: nft.uri,
+            updatedAt: new Date(),
           },
         },
         {

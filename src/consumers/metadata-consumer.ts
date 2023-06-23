@@ -28,6 +28,7 @@ metadataQueue.process(async (job, done) => {
     {
       $set: {
         metadata,
+        updatedAt: new Date(),
       },
     }
   );
