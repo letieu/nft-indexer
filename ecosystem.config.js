@@ -2,19 +2,20 @@ module.exports = {
   apps: [
     {
       name: 'metadata-consumer',
-      script: 'dist/tasks/start-metadata-consumer.js',
-      instances: 2,
+      script: 'dist/consumers/metadata-consumer.js',
+      instances: 4,
       exec_mode: 'cluster'
     },
     {
       name: 'mint-consumer',
-      script: 'dist/tasks/start-mint-consumer.js',
+      script: 'dist/consumers/mint-consumer.js',
       instances: 1
     },
     {
-      name: 'index-mint-trigger',
-      script: 'dist/tasks/trigger-index-mint.js',
+      name: 'mint-trigger',
+      script: 'dist/triggers/command.js collection check-all',
       instances: 1,
+      // run every 3 minutes
       restart_delay: 180000
     }
   ]
