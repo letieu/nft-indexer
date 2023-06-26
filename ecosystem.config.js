@@ -17,6 +17,11 @@ module.exports = {
       instances: 1,
       // run every 3 minutes
       restart_delay: 180000
+    },
+    {
+      name: 'http-server',
+      script: 'dist/triggers/http.js',
+      instances: 1
     }
   ]
 }
