@@ -12,13 +12,11 @@ module.exports = {
       instances: 1
     },
     {
-      // cron job to run every 5 minutes for command collection check-all
       name: 'mint-trigger',
       script: 'dist/triggers/command.js',
       args: 'collection check-all',
       instances: 1,
-      cron_restart: '*/5 * * * *',
-      auto_restart: false
+      restart_delay: 180000 // 3 minutes
     },
     {
       name: 'http-server',
