@@ -103,7 +103,7 @@ export async function listCollection() {
       total: nftDetailsMap[config.address]?.total || 0,
       totalUri: nftDetailsMap[config.address]?.totalUri || 0,
       totalMetadata: nftDetailsMap[config.address]?.totalMetadata || 0,
-      full: config.full,
+      live: config.live,
       running: config.running,
     };
   });
@@ -162,7 +162,7 @@ export async function updateMetadataOne(address: string, tokenId: string) {
   logger.info(`Created job for ${address} ${tokenId}, ID: ${job.id}`);
 }
 
-export async function importCollections(collections: { address: string, indexPoint: number, full: boolean }[]) {
+export async function importCollections(collections: { address: string, indexPoint: number, live: boolean }[]) {
   const client = await getMongoClient();
 
   // insert configs if address not exists

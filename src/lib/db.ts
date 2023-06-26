@@ -84,9 +84,7 @@ export async function getCollectionConfigs() {
   const client = await getMongoClient();
 
   const configs = await client.collection(CONFIG_COLLECTION).find({
-    full: {
-      $ne: true, // don't need index full collection
-    },
+    live: true,
     running: {
       $ne: true,
     }
