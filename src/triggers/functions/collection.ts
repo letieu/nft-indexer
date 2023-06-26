@@ -21,10 +21,14 @@ export async function checkAllCollection() {
       fromBlock: config.indexPoint + 1,
     });
 
+    job
+      .timeout(1000 * 60) // 1 minute
+      .retries(2)
+
     await job.save();
     await markIndexRunning(config.address);
 
-    logger.info(`Created job for ${config.address} from block ${config.indexPoint + 1}, ID: job.id`);
+    logger.info(`Created job for ${config.address} from block ${config.indexPoint + 1}, ID: ${job.id}`);
   }
 }
 
@@ -33,7 +37,7 @@ export async function checkCollection(address: string) {
   const client = await getMongoClient();
 
   const config = await client.collection(CONFIG_COLLECTION).findOne({
-    address,
+    address: getAddress(address),
   });
 
   const job = mintQueue.createJob({
@@ -158,4 +162,20 @@ export async function updateMetadataOne(address: string, tokenId: string) {
   logger.info(`Created job for ${address} ${tokenId}, ID: ${job.id}`);
 }
 
+export async function importCollections(collections: { address: string, indexPoint: number, full: boolean }[]) {
+  const client = await getMongoClient();
+
+  // insert configs if address not exists
+  const configs = await client.collection(CONFIG_COLLECTION).find().toArray();
+
+  const newConfigs = collections.filter((collection) => {
+    return !configs.find((config) => config.address === collection.address);
+  });
+
+  if (newConfigs.length > 0) {
+    await client.collection(CONFIG_COLLECTION).insertMany(newConfigs);
+  }
+
+  logger.info(`Inserted ${newConfigs.length} configs`);
+}
 

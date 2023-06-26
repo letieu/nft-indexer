@@ -11,7 +11,7 @@ export type Nft = {
   metadata?: any;
 };
 
-export const CONFIG_COLLECTION = "configs";
+export const CONFIG_COLLECTION = "index_config";
 export const NFT_COLLECTION = "nfts";
 export const TRANSFER_COLLECTION = "transfers";
 
@@ -68,7 +68,7 @@ export async function updateIndexPoint(address: string, blockNumber: number) {
   const client = await getMongoClient();
   await client.collection(CONFIG_COLLECTION).updateOne(
     {
-      address,
+      address: getAddress(address),
     },
     {
       $set: {
@@ -84,7 +84,9 @@ export async function getCollectionConfigs() {
   const client = await getMongoClient();
 
   const configs = await client.collection(CONFIG_COLLECTION).find({
-    full: false, // don't need index full collection
+    full: {
+      $ne: true, // don't need index full collection
+    },
     running: {
       $ne: true,
     }
@@ -98,7 +100,7 @@ export async function markIndexRunning(address: string) {
 
   await client.collection(CONFIG_COLLECTION).updateOne(
     {
-      address,
+      address: getAddress(address),
     },
     {
       $set: {

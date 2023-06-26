@@ -1,7 +1,8 @@
+import { readFile } from "fs/promises";
 import { logger } from "../lib/logger";
 import { QueueNames } from "../lib/queue";
 import createApiKey from "./functions/auth";
-import { checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne } from "./functions/collection";
+import { checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne, importCollections } from "./functions/collection";
 import { destroyQueue, getQueueReport } from "./functions/queue-manage";
 import { program } from 'commander';
 
@@ -50,6 +51,16 @@ collectionCommand
     } else {
       runTask(() => updateMetadataAll(address, options.force));
     }
+  });
+
+collectionCommand
+  .command('import <file>')
+  .description('Import collections from json file')
+  .action(async (file: string) => {
+    const jsonFile = await readFile(file, 'utf-8');
+    const collections = JSON.parse(jsonFile);
+
+    runTask(() => importCollections(collections));
   });
 
 // ==================== QUEUE ====================

@@ -3,7 +3,7 @@ import { MetadataData, MintData, QueueNames, queueOptions } from "../lib/queue";
 import Queue from 'bee-queue';
 import { getAllTransferLogs } from "../lib/scan";
 import { getNftsFromLogs } from "../lib/helper";
-import { updateIndexPoint, updateNfts } from "../lib/db";
+import { CONFIG_COLLECTION, getMongoClient, updateIndexPoint, updateNfts } from "../lib/db";
 import { getCurrentBlock } from "../lib/contract";
 
 const mintQueue = new Queue<MintData>(QueueNames.MINT, queueOptions);
@@ -35,9 +35,9 @@ mintQueue.process(async (job, done) => {
         tokenId: nft.tokenId,
         uri: nft.uri,
       })
-      .timeout(1000 * 60) // 1 minute
-      .retries(2)
-      .save();
+        .timeout(1000 * 60) // 1 minute
+        .retries(2)
+        .save();
     }));
   }
 
