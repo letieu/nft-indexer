@@ -37,8 +37,9 @@ collectionCommand
 collectionCommand
   .command('check-all')
   .description('Check all collections for new NFTs minted')
-  .action(() => {
-    runTask(checkAllCollection);
+  .option('-f, --force', 'Force check for not live collections')
+  .action((options: { force: boolean }) => {
+    runTask(() => checkAllCollection(options.force));
   });
 
 collectionCommand

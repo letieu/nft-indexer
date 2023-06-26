@@ -10,9 +10,9 @@ const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions)
 /*
  * Add jobs for all collections to index new nft minted
 */
-export async function checkAllCollection() {
+export async function checkAllCollection(force = false) {
   logger.info('Checking all collections');
-  const configs = await getCollectionConfigs();
+  const configs = await getCollectionConfigs(force);
   logger.info(`Found ${configs.length} configs`);
 
   for await (const config of configs) {

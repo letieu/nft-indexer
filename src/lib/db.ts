@@ -80,15 +80,22 @@ export async function updateIndexPoint(address: string, blockNumber: number) {
   logger.info(`Updated index point of ${address} to ${blockNumber}`);
 }
 
-export async function getCollectionConfigs() {
+export async function getCollectionConfigs(force = false) {
   const client = await getMongoClient();
 
-  const configs = await client.collection(CONFIG_COLLECTION).find({
-    live: true,
+  const filter = {
     running: {
       $ne: true,
     }
-  }).toArray();
+  }
+
+  if (!force) {
+    filter['live'] = true;
+  }
+
+  console.log(filter);
+
+  const configs = await client.collection(CONFIG_COLLECTION).find(filter).toArray();
 
   return configs;
 }
