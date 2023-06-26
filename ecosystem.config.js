@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'metadata-consumer',
       script: 'dist/consumers/metadata-consumer.js',
-      instances: 4,
+      instances: 3,
       exec_mode: 'cluster'
     },
     {
@@ -12,11 +12,13 @@ module.exports = {
       instances: 1
     },
     {
+      // cron job to run every 5 minutes for command collection check-all
       name: 'mint-trigger',
-      script: 'dist/triggers/command.js collection check-all',
+      script: 'dist/triggers/command.js',
+      args: 'collection check-all',
       instances: 1,
-      // run every 3 minutes
-      restart_delay: 180000
+      cron_restart: '*/5 * * * *',
+      auto_restart: false
     },
     {
       name: 'http-server',
