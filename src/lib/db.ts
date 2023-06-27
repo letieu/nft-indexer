@@ -6,7 +6,8 @@ import { logger } from "./logger";
 export type Nft = {
   tokenId: string;
   tokenAddress: string;
-  creator: string;
+  creator?: string;
+  owner?: string;
   uri?: string;
   metadata?: any;
 };
@@ -43,6 +44,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
         {
           $set: {
             creator: nft.creator,
+            owner: nft.owner,
             tokenAddress: getAddress(nft.tokenAddress),
             tokenId: nft.tokenId,
             uri: nft.uri,
@@ -92,8 +94,6 @@ export async function getCollectionConfigs(force = false) {
   if (!force) {
     filter['live'] = true;
   }
-
-  console.log(filter);
 
   const configs = await client.collection(CONFIG_COLLECTION).find(filter).toArray();
 

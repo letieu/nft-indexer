@@ -17,12 +17,12 @@ const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions)
 */
 mintQueue.process(async (job, done) => {
   logger.info(` ==================== Processing job ${job.id} ====================`);
-  const { contractAddress, fromBlock } = job.data;
+  const { contractAddress, fromBlock, onlyMinted } = job.data;
   const currentBlock = await getCurrentBlock();
 
   logger.info(`Indexing collection ${contractAddress} from block ${fromBlock} to ${currentBlock}`);
 
-  const logs = await getAllTransferLogs(contractAddress, fromBlock);
+  const logs = await getAllTransferLogs(contractAddress, onlyMinted, fromBlock);
   logger.info(`Found ${logs.length} logs`);
 
   if (logs.length > 0) {

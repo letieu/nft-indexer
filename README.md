@@ -63,9 +63,6 @@ After fetching the data, it will be saved in the `nfts` collection in your Mongo
 ## TODO:
 - [ ] Add support for retrieving NFT ownership data
 
-- [ ] Missing metadata (403)
-- [ ] Duplicate config
-
 ## Diagram
 
 ![image](https://github.com/letieu/nft-indexer/assets/53562817/ea45ef07-f8f7-40c0-846d-26ec502c10f3)

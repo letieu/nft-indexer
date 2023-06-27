@@ -29,17 +29,19 @@ collectionCommand
 
 collectionCommand
   .command('check [address]')
-  .description('Check collection for new NFTs minted')
-  .action((address: string) => {
-    runTask(() => checkCollection(address));
+  .description('Check collection for new NFTs transfered')
+  .option('-b, --block <block>', 'From block')
+  .action((address: string, options: { block: number }) => {
+    runTask(() => checkCollection(address, false, options.block));
   });
 
 collectionCommand
   .command('check-all')
   .description('Check all collections for new NFTs minted')
   .option('-f, --force', 'Force check for not live collections')
-  .action((options: { force: boolean }) => {
-    runTask(() => checkAllCollection(options.force));
+  .option('-m, --minted', 'Only check for minted NFTs')
+  .action((options: { force: boolean, minted: boolean }) => {
+    runTask(() => checkAllCollection(options.force, options.minted));
   });
 
 collectionCommand

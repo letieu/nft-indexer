@@ -13,6 +13,7 @@ export const queueOptions = {
 export type MintData = {
   contractAddress: string;
   fromBlock: number;
+  onlyMinted: boolean;
 }
 
 export type MetadataData = {

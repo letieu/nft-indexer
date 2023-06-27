@@ -50,7 +50,7 @@ router.post('/collections/:address', async (ctx, next) => {
       return ctx.body = 'Unauthorized';
 
     const { address } = ctx.params;
-    await checkCollection(address);
+    await checkCollection(address, false);
     ctx.body = {
       message: `Created job for collection ${address}`,
     };

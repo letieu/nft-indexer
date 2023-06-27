@@ -10,7 +10,7 @@ const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions)
 /*
  * Add jobs for all collections to index new nft minted
 */
-export async function checkAllCollection(force = false) {
+export async function checkAllCollection(force = false, onlyMinted = false) {
   logger.info('Checking all collections');
   const configs = await getCollectionConfigs(force);
   logger.info(`Found ${configs.length} configs`);
@@ -19,6 +19,7 @@ export async function checkAllCollection(force = false) {
     const job = mintQueue.createJob({
       contractAddress: config.address,
       fromBlock: config.indexPoint + 1,
+      onlyMinted,
     });
 
     job
@@ -32,7 +33,7 @@ export async function checkAllCollection(force = false) {
   }
 }
 
-export async function checkCollection(address: string) {
+export async function checkCollection(address: string, onlyMinted = true, fromBlock?: number) {
   logger.info(`Checking collection ${address}`);
   const client = await getMongoClient();
 
@@ -42,7 +43,8 @@ export async function checkCollection(address: string) {
 
   const job = mintQueue.createJob({
     contractAddress: address,
-    fromBlock: (config?.indexPoint || 0) + 1,
+    fromBlock: fromBlock || (config?.indexPoint || 0) + 1,
+    onlyMinted,
   });
 
   await job.save();

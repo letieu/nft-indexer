@@ -15,7 +15,7 @@ export async function getMetadata(uri: string) {
   return data;
 }
 
-async function getLogs(contractAddress: string, fromBlock: number, toBlock?: number): Promise<TransferLog[]> {
+async function getLogs(contractAddress: string, onlyMinted: boolean, fromBlock: number, toBlock?: number): Promise<TransferLog[]> {
   const params = {
     module: 'logs',
     action: 'getLogs',
@@ -23,10 +23,13 @@ async function getLogs(contractAddress: string, fromBlock: number, toBlock?: num
     toBlock: toBlock?.toString() || 'latest',
     address: contractAddress,
     topic0: erc721Iface.getEvent('Transfer').topicHash,
-    topic1: "0x0000000000000000000000000000000000000000000000000000000000000000", // only get new minted nft
     apikey: process.env.API_KEY,
     sort: 'asc',
   };
+
+  if (onlyMinted) {
+    params['topic1'] = "0x0000000000000000000000000000000000000000000000000000000000000000"; // only get new minted nft
+  }
 
   const { data } = await axios.get(process.env.SCAN_URL, { params }).catch((err) => {
     logger.error(err);
@@ -65,6 +68,7 @@ async function getLogs(contractAddress: string, fromBlock: number, toBlock?: num
 
 export async function getAllTransferLogs(
   contractAddress: string,
+  onlyMinted: boolean,
   fromBlock = 0,
 ): Promise<TransferLog[]> {
   let startBlock = fromBlock;
@@ -73,7 +77,7 @@ export async function getAllTransferLogs(
   const logs = [];
 
   while (true) {
-    const newLogs = await getLogs(contractAddress, startBlock, endBlock);
+    const newLogs = await getLogs(contractAddress, onlyMinted, startBlock, endBlock);
     if (newLogs.length === 0) {
       break;
     }
