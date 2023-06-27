@@ -61,8 +61,10 @@ Follow the steps below to use the project:
 After fetching the data, it will be saved in the `nfts` collection in your MongoDB database. You can use either the command line or the API to trigger the fetching process, check configurations, and monitor the queue status.
 
 ## TODO:
-- [ ] Add support for adding multiple configurations at once to test functionality
 - [ ] Add support for retrieving NFT ownership data
+
+- [ ] Missing metadata (403)
+- [ ] Duplicate config
 
 ## Diagram
 

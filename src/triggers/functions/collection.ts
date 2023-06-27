@@ -168,9 +168,14 @@ export async function importCollections(collections: { address: string, indexPoi
   // insert configs if address not exists
   const configs = await client.collection(CONFIG_COLLECTION).find().toArray();
 
-  const newConfigs = collections.filter((collection) => {
-    return !configs.find((config) => config.address === collection.address);
-  });
+  const newConfigs = collections
+    .filter((collection) => {
+      return !configs.find((config) => config.address === collection.address);
+    })
+    .map((collection) => ({
+      ...collection,
+      address: getAddress(collection.address),
+    }));
 
   if (newConfigs.length > 0) {
     await client.collection(CONFIG_COLLECTION).insertMany(newConfigs);
