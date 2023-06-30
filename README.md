@@ -53,11 +53,17 @@ Follow the steps below to use the project:
 		Create API key with command: `ts-node src/triggers/command.ts auth create key-name`
 6. Check `nfts` and `index_config` collection to see loaded NFTs
 	- All collection config in `index_config` with `live` = `true` will fetch new NFT Transfer event each 3 minutes ( with cronjob in `pm2` for command: `ts-node src/triggers/command.ts collection check-all` )
+	
 	- To check Transfer for a collection start from specific block use `-b` flag
 		```bash
 		ts-node src/triggers/command.ts collection check <collection_address> -b 1245
 		```
 
+   - Metadata:
+		```bash
+		#refresh metadata
+		ts-node src/triggers/command.ts collection update-metadata <address> <id>
+		```
 ## TODO:
 - [ ] Add support for retrieving NFT ownership data
 - [ ] Support import from moralis
