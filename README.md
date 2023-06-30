@@ -27,41 +27,40 @@ Follow the steps below to use the project:
    docker-compose up -d
    ```
 
-4. Start the consumer to handle the job. There are two consumers available:
-   - To load newly minted NFTs and save them to MongoDB, run:
-     ```bash
-     ts-node src/consumers/mint-consumer.ts
-     ```
-   - To load NFT metadata and save it to MongoDB, run:
-     ```bash
-     ts-node src/consumers/metadata-consumer.ts
-     ```
-   You can run multiple instances of the consumer for better performance.
+4. Start background process
+	```bash
+	pnpm build
+	pm2 start ecosystem.config.js
+	
+	pm2 logs # check logs
+	pm2 list # show list of process
+	```
+5. Trigger to load NFT data
+	- use command:
+	```bash
+	# Load NFTs of one collection to db
+	ts-node src/triggers/command.ts collection check <collection_address>
 
-5. To trigger the fetching process, you have two options:
+	# Import collection config to db (index_config collection) for check Transfer event on batch
+	ts-node src/triggers/command.ts collection import collections.json
+	ts-node src/triggers/command.ts collection check-all -f
+	 
+	ts-node src/triggers/command.ts -h # for more detail
+	```
+	- use API:
+		http://localhost:3077/docs
 
-   - Using the command line:
-     - To create jobs for a specific collection by its address, run:
-       ```bash
-       ts-node src/triggers/command.ts collection check <collection_address>
-       ```
-     - To create jobs for all collections specified in the `configs` table, run:
-       ```bash
-       ts-node src/triggers/command.ts collection check-all
-       ```
-
-   - Using the HTTP server:
-     - Start the HTTP server by running the following command, and access the API at http://localhost:3000/docs:
-       ```bash
-       ts-node src/triggers/http.ts
-       ```
-
-   Run `ts-node src/triggers/command.ts --help` to see more detailed information on available commands.
-
-After fetching the data, it will be saved in the `nfts` collection in your MongoDB database. You can use either the command line or the API to trigger the fetching process, check configurations, and monitor the queue status.
+		Create API key with command: `ts-node src/triggers/command.ts auth create key-name`
+6. Check `nfts` and `index_config` collection to see loaded NFTs
+	- All collection config in `index_config` with `live` = `true` will fetch new NFT Transfer event each 3 minutes ( with cronjob in `pm2` for command: `ts-node src/triggers/command.ts collection check-all` )
+	- To check Transfer for a collection start from specific block use `-b` flag
+		```bash
+		ts-node src/triggers/command.ts collection check <collection_address> -b 1245
+		```
 
 ## TODO:
 - [ ] Add support for retrieving NFT ownership data
+- [ ] Support import from moralis
 
 ## Diagram
 
