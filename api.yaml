@@ -46,6 +46,28 @@ paths:
           content: {}
       security:
       - bearerAuth: []
+
+  /collections/{address}/fix:
+    patch:
+      tags:
+      - Collections
+      summary: Fix missing items in a collection
+      parameters:
+      - name: address
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: OK
+          content: {}
+        401:
+          description: Unauthorized
+          content: {}
+      security:
+      - bearerAuth: []
+
   /metadata/refresh/{address}:
     post:
       tags:

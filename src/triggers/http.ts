@@ -2,7 +2,7 @@ import Koa from 'koa';
 import parser from 'koa-bodyparser';
 import cors from '@koa/cors';
 import Router from 'koa-router';
-import { checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne } from "./functions/collection";
+import { addMissingByMoralis, checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne } from "./functions/collection";
 import { destroyQueue, getQueueReport } from "./functions/queue-manage";
 import { QueueNames } from '../lib/queue';
 import passport from 'koa-passport';
@@ -51,6 +51,19 @@ router.post('/collections/:address', async (ctx, next) => {
 
     const { address } = ctx.params;
     await checkCollection(address, false);
+    ctx.body = {
+      message: `Created job for collection ${address}`,
+    };
+  })(ctx, next);
+});
+
+router.patch('/collections/:address/fix', async (ctx, next) => {
+  return passport.authenticate('jwt', { session: false }, async (err, user) => {
+    if (!user)
+      return ctx.body = 'Unauthorized';
+
+    const { address } = ctx.params;
+    await addMissingByMoralis(address);
     ctx.body = {
       message: `Created job for collection ${address}`,
     };

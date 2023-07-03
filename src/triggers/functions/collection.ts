@@ -3,6 +3,7 @@ import { MetadataData, MintData, QueueNames, queueOptions } from "../../lib/queu
 import { CONFIG_COLLECTION, NFT_COLLECTION, getCollectionConfigs, getMongoClient, markIndexRunning } from "../../lib/db";
 import Queue from 'bee-queue';
 import { getAddress } from "ethers";
+import { getContractNFTs } from "../../lib/moralis";
 
 const mintQueue = new Queue<MintData>(QueueNames.MINT, queueOptions);
 const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
@@ -186,3 +187,42 @@ export async function importCollections(collections: { address: string, indexPoi
   logger.info(`Inserted ${newConfigs.length} configs`);
 }
 
+export async function addMissingByMoralis(address: string) {
+  try {
+    const client = await getMongoClient();
+
+    let cursor = '';
+    let isDone = false;
+
+    while (!isDone) {
+      const res = await getContractNFTs(address, cursor);
+      cursor = res.cursor;
+      console.log(res.page);
+      const nfts = res.result;
+
+      await Promise.all(nfts.map(async (nft) => {
+        const existing = await client.collection(NFT_COLLECTION).findOne({
+          tokenAddress: address,
+          tokenId: nft.token_id,
+        });
+
+        if (!existing) {
+          console.log(`Adding ${address} ${nft.token_id}`);
+          await client.collection(NFT_COLLECTION).insertOne({
+            tokenAddress: address,
+            tokenId: nft.token_id,
+            uri: nft.token_uri,
+            metadata: JSON.parse(nft.metadata),
+          });
+        }
+      }));
+
+      if (!cursor) {
+        isDone = true;
+        break;
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
