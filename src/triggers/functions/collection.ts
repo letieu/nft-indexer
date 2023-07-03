@@ -172,13 +172,11 @@ export async function importCollections(collections: { address: string, indexPoi
   const configs = await client.collection(CONFIG_COLLECTION).find().toArray();
 
   const newConfigs = collections
-    .filter((collection) => {
-      return !configs.find((config) => config.address === getAddress(collection.address));
-    })
     .map((collection) => ({
       ...collection,
       address: getAddress(collection.address),
-    }));
+    }))
+    .filter((collection) => !configs.find((config) => config.address === collection.address));
 
   if (newConfigs.length > 0) {
     await client.collection(CONFIG_COLLECTION).insertMany(newConfigs);
