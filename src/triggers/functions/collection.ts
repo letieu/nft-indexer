@@ -173,7 +173,7 @@ export async function importCollections(collections: { address: string, indexPoi
 
   const newConfigs = collections
     .filter((collection) => {
-      return !configs.find((config) => config.address === collection.address);
+      return !configs.find((config) => config.address === getAddress(collection.address));
     })
     .map((collection) => ({
       ...collection,
