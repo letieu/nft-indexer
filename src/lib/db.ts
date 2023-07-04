@@ -2,6 +2,7 @@ import { MongoClient } from "mongodb";
 import { TransferLog } from "./scan";
 import { getAddress } from "ethers";
 import { logger } from "./logger";
+import Bottleneck from "bottleneck";
 
 export type Nft = {
   tokenId: string;
@@ -34,30 +35,38 @@ export const getMongoClient = (() => {
 
 export async function updateNfts(nfts: Map<string, Nft>) {
   const client = await getMongoClient();
-  await Promise.all(
-    Array.from(nfts.values()).map(async (nft) => {
-      await client.collection(NFT_COLLECTION).updateOne(
-        {
-          tokenId: nft.tokenId,
-          tokenAddress: getAddress(nft.tokenAddress),
-        },
-        {
-          $set: {
-            creator: nft.creator,
-            owner: nft.owner,
-            tokenAddress: getAddress(nft.tokenAddress),
+
+  const limiter = new Bottleneck({
+    minTime: 333
+  });
+  limiter
+    .schedule(() => {
+      const allTasks = Array.from(nfts.values()).map(async (nft) => {
+        await client.collection(NFT_COLLECTION).updateOne(
+          {
             tokenId: nft.tokenId,
-            uri: nft.uri,
-            updatedAt: new Date(),
+            tokenAddress: getAddress(nft.tokenAddress),
           },
-        },
-        {
-          upsert: true,
-        }
-      );
+          {
+            $set: {
+              creator: nft.creator,
+              owner: nft.owner,
+              tokenAddress: getAddress(nft.tokenAddress),
+              tokenId: nft.tokenId,
+              uri: nft.uri,
+              updatedAt: new Date(),
+            },
+          },
+          {
+            upsert: true,
+          }
+        );
+      });
+      return Promise.all(allTasks);
     })
-  );
-  logger.info(`Updated ${nfts.size} nfts to db`);
+    .then((results) => {
+      logger.info(`Updated ${nfts.size} nfts to db`);
+    });
 }
 
 export async function updateTransferLogs(logs: TransferLog[]) {
