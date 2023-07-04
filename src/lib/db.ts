@@ -39,7 +39,8 @@ export async function updateNfts(nfts: Map<string, Nft>) {
   const limiter = new Bottleneck({
     minTime: 333
   });
-  limiter
+
+  await limiter
     .schedule(() => {
       const allTasks = Array.from(nfts.values()).map(async (nft) => {
         await client.collection(NFT_COLLECTION).updateOne(
@@ -64,9 +65,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
       });
       return Promise.all(allTasks);
     })
-    .then((results) => {
-      logger.info(`Updated ${nfts.size} nfts to db`);
-    });
+  logger.info(`Updated ${nfts.size} nfts to db`);
 }
 
 export async function updateTransferLogs(logs: TransferLog[]) {
