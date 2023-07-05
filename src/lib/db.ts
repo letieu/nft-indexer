@@ -36,12 +36,11 @@ export const getMongoClient = (() => {
 export async function updateNfts(nfts: Map<string, Nft>) {
   const client = await getMongoClient();
 
-  const batchSize = 200; // Set the desired batch size
+  const batchSize = 2; // Set the desired batch size
   const nftsIterator = nfts.entries();
   let processedCount = 0;
 
   while (processedCount < nfts.size) {
-    logger.info(`Updating ${processedCount} nfts to db`);
     const batchNFTs = [];
     for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
       const [key, value] = nftsIterator.next().value;
@@ -67,6 +66,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
       });
     });
 
+    logger.info(`Updating ${batchNFTs.length} nfts to db`);
     await bulk.execute();
 
     logger.info(`Updated ${processedCount} nfts to db`);
