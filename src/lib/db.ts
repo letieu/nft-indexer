@@ -36,53 +36,42 @@ export const getMongoClient = (() => {
 export async function updateNfts(nfts: Map<string, Nft>) {
   const client = await getMongoClient();
 
-  // const allTasks = Array.from(nfts.values()).map(async (nft) => {
-  //   await client.collection(NFT_COLLECTION).updateOne(
-  //     {
-  //       tokenId: nft.tokenId,
-  //       tokenAddress: getAddress(nft.tokenAddress),
-  //     },
-  //     {
-  //       $set: {
-  //         creator: nft.creator,
-  //         owner: nft.owner,
-  //         tokenAddress: getAddress(nft.tokenAddress),
-  //         tokenId: nft.tokenId,
-  //         uri: nft.uri,
-  //         updatedAt: new Date(),
-  //       },
-  //     },
-  //     {
-  //       upsert: true,
-  //     }
-  //   );
-  // });
-  //
-  // await Promise.all(allTasks);
+  const batchSize = 200; // Set the desired batch size
+  const nftsIterator = nfts.entries();
+  let processedCount = 0;
 
-  // convert to updateMany
+  while (processedCount < nfts.size) {
+    const batchNFTs = [];
+    for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
+      const [key, value] = nftsIterator.next().value;
+      batchNFTs.push({ key, value });
+      processedCount++;
+    }
 
-  const bulk = client.collection(NFT_COLLECTION).initializeUnorderedBulkOp();
+    const bulk = client.collection(NFT_COLLECTION).initializeUnorderedBulkOp();
 
-  nfts.forEach((nft) => {
-    bulk.find({
-      tokenId: nft.tokenId,
-      tokenAddress: getAddress(nft.tokenAddress),
-    }).upsert().updateOne({
-      $set: {
-        creator: nft.creator,
-        owner: nft.owner,
-        tokenAddress: getAddress(nft.tokenAddress),
-        tokenId: nft.tokenId,
-        uri: nft.uri,
-        updatedAt: new Date(),
-      },
+    batchNFTs.forEach(({ key, value }) => {
+      bulk.find({
+        tokenId: value.tokenId,
+        tokenAddress: getAddress(value.tokenAddress),
+      }).upsert().updateOne({
+        $set: {
+          creator: value.creator,
+          owner: value.owner,
+          tokenAddress: getAddress(value.tokenAddress),
+          tokenId: value.tokenId,
+          uri: value.uri,
+          updatedAt: new Date(),
+        },
+      });
     });
-  });
 
-  await bulk.execute();
+    await bulk.execute();
 
-  logger.info(`Updated ${nfts.size} nfts to db`);
+    logger.info(`Updated ${processedCount} nfts to db`);
+  }
+
+  logger.info(`Total updated ${processedCount} nfts to db`);
 }
 
 export async function updateTransferLogs(logs: TransferLog[]) {
