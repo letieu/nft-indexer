@@ -2,7 +2,6 @@ import { MongoClient } from "mongodb";
 import { TransferLog } from "./scan";
 import { getAddress } from "ethers";
 import { logger } from "./logger";
-import Bottleneck from "bottleneck";
 
 export type Nft = {
   tokenId: string;
@@ -46,37 +45,43 @@ export async function updateNfts(nfts: Map<string, Nft>) {
 
   while (processedCount < nfts.size) {
     const batchNFTs = [];
+    const batchTokenIds = [];
+    const batchTokenAddresses = [];
+
     for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
       const [key, value] = nftsIterator.next().value;
       batchNFTs.push({ key, value });
-      tokenIds.push(value.tokenId);
-      tokenAddresses.push(getAddress(value.tokenAddress));
+      batchTokenIds.push(value.tokenId);
+      batchTokenAddresses.push(getAddress(value.tokenAddress));
       processedCount++;
     }
 
-    const filter = {
-      tokenId: { $in: tokenIds },
-      tokenAddress: { $in: tokenAddresses },
+    const updateOptions = {
+      $set: {
+        updatedAt: new Date(),
+      },
     };
 
-    batchNFTs.forEach(({ key, value }) => {
-      bulkOps.push({
-        updateOne: {
-          filter,
-          update: {
-            $set: {
-              creator: value.creator,
-              owner: value.owner,
-              tokenAddress: getAddress(value.tokenAddress),
-              tokenId: value.tokenId,
-              uri: value.uri,
-              updatedAt: new Date(),
-            },
-          },
-          upsert: true,
+    const bulkOps = batchNFTs.map(({ key, value }) => ({
+      updateOne: {
+        filter: {
+          tokenId: value.tokenId,
+          tokenAddress: getAddress(value.tokenAddress),
         },
-      });
-    });
+        update: {
+          $setOnInsert: {
+            creator: value.creator,
+            tokenAddress: getAddress(value.tokenAddress),
+            tokenId: value.tokenId,
+          },
+          ...updateOptions,
+          owner: value.owner,
+          uri: value.uri,
+          metadata: value.metadata,
+        },
+        upsert: true,
+      },
+    }));
 
     if (bulkOps.length > 0) {
       logger.info(`Updating ${batchNFTs.length} nfts to db`);
