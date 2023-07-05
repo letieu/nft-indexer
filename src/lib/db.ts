@@ -35,41 +35,54 @@ export const getMongoClient = (() => {
 
 export async function updateNfts(nfts: Map<string, Nft>) {
   const client = await getMongoClient();
-
-  const batchSize = 20; // Set the desired batch size
+  const collection = client.collection(NFT_COLLECTION);
+  const batchSize = 100; // Set the desired batch size
   const nftsIterator = nfts.entries();
   let processedCount = 0;
+
+  const bulkOps = [];
+  const tokenIds = [];
+  const tokenAddresses = [];
 
   while (processedCount < nfts.size) {
     const batchNFTs = [];
     for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
       const [key, value] = nftsIterator.next().value;
       batchNFTs.push({ key, value });
+      tokenIds.push(value.tokenId);
+      tokenAddresses.push(getAddress(value.tokenAddress));
       processedCount++;
     }
 
-    const bulk = client.collection(NFT_COLLECTION).initializeUnorderedBulkOp();
+    const filter = {
+      tokenId: { $in: tokenIds },
+      tokenAddress: { $in: tokenAddresses },
+    };
 
     batchNFTs.forEach(({ key, value }) => {
-      bulk.find({
-        tokenId: value.tokenId,
-        tokenAddress: getAddress(value.tokenAddress),
-      }).upsert().updateOne({
-        $set: {
-          creator: value.creator,
-          owner: value.owner,
-          tokenAddress: getAddress(value.tokenAddress),
-          tokenId: value.tokenId,
-          uri: value.uri,
-          updatedAt: new Date(),
+      bulkOps.push({
+        updateOne: {
+          filter,
+          update: {
+            $set: {
+              creator: value.creator,
+              owner: value.owner,
+              tokenAddress: getAddress(value.tokenAddress),
+              tokenId: value.tokenId,
+              uri: value.uri,
+              updatedAt: new Date(),
+            },
+          },
+          upsert: true,
         },
       });
     });
 
-    logger.info(`Updating ${batchNFTs.length} nfts to db`);
-    await bulk.execute();
-
-    logger.info(`Updated ${processedCount} nfts to db`);
+    if (bulkOps.length > 0) {
+      logger.info(`Updating ${batchNFTs.length} nfts to db`);
+      await collection.bulkWrite(bulkOps);
+      logger.info(`Updated ${processedCount} nfts to db`);
+    }
   }
 
   logger.info(`Total updated ${processedCount} nfts to db`);
