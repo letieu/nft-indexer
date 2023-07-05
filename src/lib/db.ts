@@ -41,6 +41,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
   let processedCount = 0;
 
   while (processedCount < nfts.size) {
+    logger.info(`Updating ${processedCount} nfts to db`);
     const batchNFTs = [];
     for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
       const [key, value] = nftsIterator.next().value;
