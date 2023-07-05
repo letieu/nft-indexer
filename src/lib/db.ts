@@ -36,7 +36,7 @@ export const getMongoClient = (() => {
 export async function updateNfts(nfts: Map<string, Nft>) {
   const client = await getMongoClient();
 
-  const batchSize = 2; // Set the desired batch size
+  const batchSize = 20; // Set the desired batch size
   const nftsIterator = nfts.entries();
   let processedCount = 0;
 
