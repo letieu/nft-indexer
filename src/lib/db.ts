@@ -36,35 +36,52 @@ export const getMongoClient = (() => {
 export async function updateNfts(nfts: Map<string, Nft>) {
   const client = await getMongoClient();
 
-  const limiter = new Bottleneck({
-    minTime: 333
+  // const allTasks = Array.from(nfts.values()).map(async (nft) => {
+  //   await client.collection(NFT_COLLECTION).updateOne(
+  //     {
+  //       tokenId: nft.tokenId,
+  //       tokenAddress: getAddress(nft.tokenAddress),
+  //     },
+  //     {
+  //       $set: {
+  //         creator: nft.creator,
+  //         owner: nft.owner,
+  //         tokenAddress: getAddress(nft.tokenAddress),
+  //         tokenId: nft.tokenId,
+  //         uri: nft.uri,
+  //         updatedAt: new Date(),
+  //       },
+  //     },
+  //     {
+  //       upsert: true,
+  //     }
+  //   );
+  // });
+  //
+  // await Promise.all(allTasks);
+
+  // convert to updateMany
+
+  const bulk = client.collection(NFT_COLLECTION).initializeUnorderedBulkOp();
+
+  nfts.forEach((nft) => {
+    bulk.find({
+      tokenId: nft.tokenId,
+      tokenAddress: getAddress(nft.tokenAddress),
+    }).upsert().updateOne({
+      $set: {
+        creator: nft.creator,
+        owner: nft.owner,
+        tokenAddress: getAddress(nft.tokenAddress),
+        tokenId: nft.tokenId,
+        uri: nft.uri,
+        updatedAt: new Date(),
+      },
+    });
   });
 
-  await limiter
-    .schedule(() => {
-      const allTasks = Array.from(nfts.values()).map(async (nft) => {
-        await client.collection(NFT_COLLECTION).updateOne(
-          {
-            tokenId: nft.tokenId,
-            tokenAddress: getAddress(nft.tokenAddress),
-          },
-          {
-            $set: {
-              creator: nft.creator,
-              owner: nft.owner,
-              tokenAddress: getAddress(nft.tokenAddress),
-              tokenId: nft.tokenId,
-              uri: nft.uri,
-              updatedAt: new Date(),
-            },
-          },
-          {
-            upsert: true,
-          }
-        );
-      });
-      return Promise.all(allTasks);
-    })
+  await bulk.execute();
+
   logger.info(`Updated ${nfts.size} nfts to db`);
 }
 
