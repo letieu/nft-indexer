@@ -5,6 +5,7 @@ import { getAllTransferLogs } from "../lib/scan";
 import { getNftsFromLogs } from "../lib/helper";
 import { CONFIG_COLLECTION, getMongoClient, updateIndexPoint, updateNfts } from "../lib/db";
 import { getCurrentBlock } from "../lib/contract";
+import { getAddress } from "ethers";
 
 const mintQueue = new Queue<MintData>(QueueNames.MINT, queueOptions);
 const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
@@ -17,8 +18,10 @@ const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions)
 */
 mintQueue.process(async (job, done) => {
   logger.info(` ==================== Processing job ${job.id} ====================`);
-  const { contractAddress, fromBlock, onlyMinted } = job.data;
+  let { contractAddress, fromBlock, onlyMinted } = job.data;
   const currentBlock = await getCurrentBlock();
+
+  contractAddress = getAddress(contractAddress);
 
   logger.info(`Indexing collection ${contractAddress} from block ${fromBlock} to ${currentBlock}`);
 

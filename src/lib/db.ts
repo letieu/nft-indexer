@@ -50,7 +50,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
         collection.updateOne(
           {
             tokenId: key,
-            tokenAddress: value.tokenAddress,
+            tokenAddress: getAddress(value.tokenAddress),
           },
           {
             $set: {
