@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import { logger } from "../lib/logger";
 import { QueueNames } from "../lib/queue";
 import createApiKey from "./functions/auth";
-import { checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne, importCollections } from "./functions/collection";
+import { checkAllCollection, checkCollection, listCollection, updateMetadataAll, updateMetadataOne, importCollections, addMissingByMoralis } from "./functions/collection";
 import { destroyQueue, getQueueReport } from "./functions/queue-manage";
 import { program } from 'commander';
 
@@ -64,6 +64,14 @@ collectionCommand
     const collections = JSON.parse(jsonFile);
 
     runTask(() => importCollections(collections));
+  });
+
+
+collectionCommand
+  .command('add-missing <address>')
+  .description('Add missing NFTs from Moralis')
+  .action(async (address: string) => {
+    runTask(() => addMissingByMoralis(address));
   });
 
 // ==================== QUEUE ====================
