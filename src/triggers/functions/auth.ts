@@ -9,6 +9,8 @@ export default function createApiKey(keyId: string, ttl: number = 0) {
 
   if (ttl > 0) {
     options['expiresIn'] = new Date().getTime() + ttl
+  } else {
+    options['expiresIn'] = '10y'
   }
 
   const token = jwt.sign(
