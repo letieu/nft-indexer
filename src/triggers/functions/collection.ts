@@ -28,7 +28,6 @@ export async function checkAllCollection(force = false, onlyMinted = false) {
       .retries(2)
 
     await job.save();
-    await markIndexRunning(config.address);
 
     logger.info(`Created job for ${config.address} from block ${config.indexPoint + 1}, ID: ${job.id}`);
   }
@@ -49,7 +48,6 @@ export async function checkCollection(address: string, onlyMinted = true, fromBl
   });
 
   await job.save();
-  await markIndexRunning(address);
 
   logger.info(`Created job for ${address} from block 0, ID: ${job.id}`);
 }
