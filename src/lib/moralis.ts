@@ -7,7 +7,7 @@ export async function getContractNFTs(
   const chainId = process.env.CHAIN_ID;
   const apiKey = process.env.MORALIS_API_KEY;
   const response = await axios.get(
-    `https://deep-index.moralis.io/api/v2/nft/${address}?chain=${chainId}&format=decimal&disable_total=false&media_items=false&cursor=${cursor}`,
+    `https://deep-index.moralis.io/api/v2/nft/${address}?chain=${chainId}&format=decimal&media_items=false&cursor=${cursor}`,
     {
       headers: {
         'X-API-Key': apiKey,
