@@ -1,5 +1,5 @@
 import { logger } from "../lib/logger";
-import { MetadataData, MintData, QueueNames, queueOptions } from "../lib/queue";
+import { MetadataData, MintData, NftSaveData, QueueNames, queueOptions } from "../lib/queue";
 import Queue from 'bee-queue';
 import { getAllTransferLogs } from "../lib/scan";
 import { getNftsFromLogs } from "../lib/helper";
@@ -9,6 +9,7 @@ import { getAddress } from "ethers";
 
 const mintQueue = new Queue<MintData>(QueueNames.MINT, queueOptions);
 const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
+const saveNftQueue = new Queue<NftSaveData>(QueueNames.NFT_SAVE, queueOptions);
 
 /* works:
   - load all transfer logs from fromBlock to currentBlock
@@ -29,7 +30,7 @@ mintQueue.process(async (job, done) => {
 
   if (logs.length > 0) {
     const nfts = getNftsFromLogs(logs, contractAddress);
-    await updateNfts(nfts);
+    await updateNfts(nfts, saveNftQueue);
 
     await Promise.all(Array.from(nfts.values()).map((nft) => {
       return metadataQueue.createJob({

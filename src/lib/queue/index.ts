@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { AnyBulkWriteOperation } from 'mongodb';
 
 export const queueOptions = {
   removeOnSuccess: true,
@@ -22,7 +23,10 @@ export type MetadataData = {
   uri: string;
 }
 
+export type NftSaveData = AnyBulkWriteOperation[];
+
 export enum QueueNames {
   MINT = 'mint',
   METADATA = 'metadata',
+  NFT_SAVE = 'nft-save',
 }

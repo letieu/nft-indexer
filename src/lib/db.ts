@@ -2,6 +2,8 @@ import { MongoClient } from "mongodb";
 import { TransferLog } from "./scan";
 import { getAddress } from "ethers";
 import { logger } from "./logger";
+import { NftSaveData } from "./queue";
+import Queue from 'bee-queue';
 
 export type Nft = {
   tokenId: string;
@@ -32,10 +34,7 @@ export const getMongoClient = (() => {
   }
 })()
 
-export async function updateNfts(nfts: Map<string, Nft>) {
-  const client = await getMongoClient();
-  const collection = client.collection(NFT_COLLECTION);
-
+export async function updateNfts(nfts: Map<string, Nft>, saveNftQueue: Queue<NftSaveData>) {
   const batchSize = 100; // Set the desired batch size
   const nftsIterator = nfts.entries();
   let processedCount = 0;
@@ -64,7 +63,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
       processedCount++;
     }
 
-    await collection.bulkWrite(itemsToUpdate);
+    saveNftQueue.createJob(itemsToUpdate)
     logger.info(`Updated ${processedCount} nfts to db`);
   }
 
