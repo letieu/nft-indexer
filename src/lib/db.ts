@@ -65,6 +65,7 @@ export async function updateNfts(nfts: Map<string, Nft>) {
     }
 
     await collection.bulkWrite(itemsToUpdate);
+    logger.info(`Updated ${processedCount} nfts to db`);
   }
 
   logger.info(`Total updated ${processedCount} nfts to db`);
