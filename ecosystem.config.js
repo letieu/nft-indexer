@@ -12,6 +12,11 @@ module.exports = {
       instances: 1
     },
     {
+      name: 'nft-save-consumer',
+      script: 'dist/consumers/nft-save-consumer.js',
+      instances: 1
+    },
+    {
       name: 'mint-trigger',
       script: 'dist/triggers/command.js',
       args: 'collection check-all',
