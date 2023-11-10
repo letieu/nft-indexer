@@ -48,7 +48,9 @@ export async function updateNfts(nfts: Map<string, Nft>, saveNftQueue: Queue<Nft
       processedCount++;
     }
 
-    saveNftQueue.createJob(itemsToUpdate)
+    await saveNftQueue.createJob(itemsToUpdate)
+      .retries(2)
+      .save();
     logger.info(`Created job for save ${itemsToUpdate.length} nfts`);
   }
 
