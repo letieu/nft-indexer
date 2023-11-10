@@ -41,32 +41,30 @@ export async function updateNfts(nfts: Map<string, Nft>) {
   let processedCount = 0;
 
   while (processedCount < nfts.size) {
-    const promises = [];
+    const itemsToUpdate = [];
 
     for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
       const [key, value] = nftsIterator.next().value;
 
-      promises.push(
-        collection.updateOne(
-          {
+      itemsToUpdate.push({
+        updateOne: {
+          filter: {
             tokenId: key,
             tokenAddress: getAddress(value.tokenAddress),
           },
-          {
+          update: {
             $set: {
               ...value,
             },
           },
-          {
-            upsert: true,
-          }
-        )
-      );
+          upsert: true,
+        }
+      });
 
       processedCount++;
     }
 
-    await Promise.all(promises);
+    await collection.bulkWrite(itemsToUpdate);
   }
 
   logger.info(`Total updated ${processedCount} nfts to db`);
