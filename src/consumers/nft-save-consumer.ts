@@ -1,17 +1,47 @@
 import { NFT_COLLECTION, getMongoClient } from "../lib/db";
 import { logger } from "../lib/logger";
-import { NftSaveData, QueueNames, queueOptions } from "../lib/queue";
+import { MetadataData, NftSaveData, QueueNames, queueOptions } from "../lib/queue";
 import Queue, { Job } from 'bee-queue';
 
 const nftSaveQueue = new Queue<NftSaveData>(QueueNames.NFT_SAVE, queueOptions);
+const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
 
 nftSaveQueue.process(async (job: Job<NftSaveData>, done) => {
   logger.info(` ==================== Processing job ${job.id} ====================`);
-  let bulkInsertData = job.data;
+  let nfts = job.data;
 
   const client = await getMongoClient();
   const collection = client.collection(NFT_COLLECTION);
-  await collection.bulkWrite(bulkInsertData);
+
+  const writeOps = nfts.map((nft) => {
+    return {
+      updateOne: {
+        filter: {
+          tokenId: nft.tokenId,
+          tokenAddress: nft.tokenAddress,
+        },
+        update: {
+          $set: {
+            ...nft,
+          },
+        },
+        upsert: true,
+      }
+    }
+  });
+
+  await collection.bulkWrite(writeOps);
+
+  await Promise.all(Array.from(nfts.values()).map((nft) => {
+    return metadataQueue.createJob({
+      tokenAddress: nft.tokenAddress,
+      tokenId: nft.tokenId,
+      uri: nft.uri,
+    })
+      .timeout(1000 * 60) // 1 minute
+      .retries(2)
+      .save();
+  }));
 
   done()
 });

@@ -40,34 +40,19 @@ export async function updateNfts(nfts: Map<string, Nft>, saveNftQueue: Queue<Nft
   let processedCount = 0;
 
   while (processedCount < nfts.size) {
-    const itemsToUpdate = [];
+    const itemsToUpdate: Nft[] = [];
 
     for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
       const [key, value] = nftsIterator.next().value;
-
-      itemsToUpdate.push({
-        updateOne: {
-          filter: {
-            tokenId: key,
-            tokenAddress: getAddress(value.tokenAddress),
-          },
-          update: {
-            $set: {
-              ...value,
-            },
-          },
-          upsert: true,
-        }
-      });
-
+      itemsToUpdate.push(value);
       processedCount++;
     }
 
     saveNftQueue.createJob(itemsToUpdate)
-    logger.info(`Updated ${processedCount} nfts to db`);
+    logger.info(`Created job for save ${itemsToUpdate.length} nfts`);
   }
 
-  logger.info(`Total updated ${processedCount} nfts to db`);
+  logger.info(`Created ${processedCount} jobs for save nfts`);
 }
 
 export async function updateTransferLogs(logs: TransferLog[]) {

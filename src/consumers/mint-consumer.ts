@@ -1,14 +1,13 @@
 import { logger } from "../lib/logger";
-import { MetadataData, MintData, NftSaveData, QueueNames, queueOptions } from "../lib/queue";
+import { MintData, NftSaveData, QueueNames, queueOptions } from "../lib/queue";
 import Queue from 'bee-queue';
 import { getAllTransferLogs } from "../lib/scan";
 import { getNftsFromLogs } from "../lib/helper";
-import { CONFIG_COLLECTION, getMongoClient, markIndexRunning, updateIndexPoint, updateNfts } from "../lib/db";
+import { markIndexRunning, updateIndexPoint, updateNfts } from "../lib/db";
 import { getCurrentBlock } from "../lib/contract";
 import { getAddress } from "ethers";
 
 const mintQueue = new Queue<MintData>(QueueNames.MINT, queueOptions);
-const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
 const saveNftQueue = new Queue<NftSaveData>(QueueNames.NFT_SAVE, queueOptions);
 
 /* works:
@@ -31,17 +30,6 @@ mintQueue.process(async (job, done) => {
   if (logs.length > 0) {
     const nfts = getNftsFromLogs(logs, contractAddress);
     await updateNfts(nfts, saveNftQueue);
-
-    await Promise.all(Array.from(nfts.values()).map((nft) => {
-      return metadataQueue.createJob({
-        tokenAddress: nft.tokenAddress,
-        tokenId: nft.tokenId,
-        uri: nft.uri,
-      })
-        .timeout(1000 * 60) // 1 minute
-        .retries(2)
-        .save();
-    }));
   }
 
   done()
