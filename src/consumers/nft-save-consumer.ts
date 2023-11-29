@@ -1,47 +1,30 @@
-import { NFT_COLLECTION, getMongoClient } from "../lib/db";
+import { ContractInterface, NFT_COLLECTION, getMongoClient } from "../lib/db";
 import { logger } from "../lib/logger";
 import { MetadataData, NftSaveData, QueueNames, queueOptions } from "../lib/queue";
 import Queue, { Job } from 'bee-queue';
+import { TransferLog } from "../lib/scan";
+import { Collection, Document } from "mongodb";
+import { getErc721NftsFromLogs } from "../lib/helper";
 
 const nftSaveQueue = new Queue<NftSaveData>(QueueNames.NFT_SAVE, queueOptions);
 const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
 
 nftSaveQueue.process(async (job: Job<NftSaveData>, done) => {
   logger.info(` ==================== Processing job ${job.id} ====================`);
-  let nfts = job.data;
-
   const client = await getMongoClient();
   const collection = client.collection(NFT_COLLECTION);
 
-  const writeOps = nfts.map((nft) => {
-    return {
-      updateOne: {
-        filter: {
-          tokenId: nft.tokenId,
-          tokenAddress: nft.tokenAddress,
-        },
-        update: {
-          $set: {
-            ...nft,
-          },
-        },
-        upsert: true,
-      }
-    }
-  });
+  let { transferLogs, contractAddress, contractInterface } = job.data;
 
-  await collection.bulkWrite(writeOps);
+  if (contractInterface === ContractInterface.ERC721) {
+    await saveErc721(transferLogs, contractAddress, collection);
+  }
 
-  await Promise.all(Array.from(nfts.values()).map((nft) => {
-    return metadataQueue.createJob({
-      tokenAddress: nft.tokenAddress,
-      tokenId: nft.tokenId,
-      uri: nft.uri,
-    })
-      .timeout(1000 * 60) // 1 minute
-      .retries(2)
-      .save();
-  }));
+  if (contractInterface === ContractInterface.ERC1155) {
+    // TODO: implement
+  }
+
+  await createMetadataJobs(contractAddress, transferLogs);
 
   done()
 });
@@ -62,3 +45,37 @@ nftSaveQueue.on('error', (err) => {
 
 logger.info(`Waiting for jobs in ${QueueNames.NFT_SAVE}`);
 
+async function createMetadataJobs(contractAddress: string, transferLogs: TransferLog[]) {
+  await Promise.all(transferLogs.map((log) => {
+    return metadataQueue.createJob({
+      tokenAddress: contractAddress,
+      tokenId: log.tokenId,
+      uri: log.uri,
+    })
+      .timeout(1000 * 60) // 1 minute
+      .retries(2)
+      .save();
+  }));
+}
+
+async function saveErc721(transferLogs: TransferLog[], contractAddress: string, collection: Collection<Document>) {
+  const nfts = getErc721NftsFromLogs(transferLogs, contractAddress);
+  const writeOps = Array.from(nfts.values()).map((nft) => {
+    return {
+      updateOne: {
+        filter: {
+          tokenId: nft.tokenId,
+          tokenAddress: contractAddress,
+        },
+        update: {
+          $set: {
+            ...nft,
+          },
+        },
+        upsert: true,
+      }
+    }
+  });
+
+  await collection.bulkWrite(writeOps);
+}

@@ -1,6 +1,6 @@
 import { logger } from "../../lib/logger";
 import { MetadataData, MintData, QueueNames, queueOptions } from "../../lib/queue";
-import { CONFIG_COLLECTION, NFT_COLLECTION, getCollectionConfigs, getMongoClient, markIndexRunning } from "../../lib/db";
+import { CONFIG_COLLECTION, ContractInterface, NFT_COLLECTION, findOrCreateIndexConfig, getCollectionConfigs, getMongoClient, markIndexRunning } from "../../lib/db";
 import Queue from 'bee-queue';
 import { getAddress } from "ethers";
 import { getContractNFTs } from "../../lib/moralis";
@@ -14,13 +14,16 @@ const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions)
 export async function checkAllCollection(force = false, onlyMinted = false) {
   logger.info('Checking all collections');
   const configs = await getCollectionConfigs(force);
+
   logger.info(`Found ${configs.length} configs`);
 
   for await (const config of configs) {
+    const contractInterface: ContractInterface = config.contractInterface;
     const job = mintQueue.createJob({
       contractAddress: config.address,
       fromBlock: config.indexPoint + 1,
       onlyMinted,
+      contractInterface,
     });
 
     job
@@ -37,14 +40,15 @@ export async function checkCollection(address: string, onlyMinted = true, fromBl
   logger.info(`Checking collection ${address}`);
   const client = await getMongoClient();
 
-  const config = await client.collection(CONFIG_COLLECTION).findOne({
-    address: getAddress(address),
-  });
+  const config = await findOrCreateIndexConfig(getAddress(address));
+
+  const contractInterface: ContractInterface = config?.contractInterface || ContractInterface.ERC721;
 
   const job = mintQueue.createJob({
     contractAddress: address,
     fromBlock: fromBlock || (config?.indexPoint || 0) + 1,
     onlyMinted,
+    contractInterface,
   });
 
   await job.save();

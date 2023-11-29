@@ -10,6 +10,9 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import yamljs from 'yamljs';
 import { koaSwagger } from 'koa2-swagger-ui';
 import 'dotenv/config';
+import { getAllTransferLogs } from '../lib/scan';
+import { ContractInterface, findOrCreateIndexConfig } from '../lib/db';
+import { getContractInterface } from '../lib/contract';
 
 passport.use(new JwtStrategy({
   secretOrKey: process.env.JWT_SECRET,
@@ -115,6 +118,14 @@ router.delete('/queues/:name', async (ctx, next) => {
       message: `Destroyed queue ${name}`,
     };
   })(ctx, next);
+});
+
+router.get('/test', async (ctx) => {
+  // const res = await getAllTransferLogs("0x67a8fe17db4d441f96f26094677763a2213a3b5f", false, 0, ContractInterface.ERC1155)
+  // const res = await getContractInterface("0xfe8519b5d1ee955a11d7baf98a5880e3f6e2b0c5")
+  // const res = await findOrCreateIndexConfig("0xfe8519b5d1ee955a11d7baf98a5880e3f6e2b0c5")
+  // const res2 = await findOrCreateIndexConfig("0x67a8fe17db4d441f96f26094677763a2213a3b5f")
+  ctx.body = 'ok';
 });
 
 // @ts-ignore

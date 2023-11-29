@@ -1,5 +1,6 @@
 import 'dotenv/config';
-import { Nft } from '../db';
+import { ContractInterface, Nft } from '../db';
+import { TransferLog } from '../scan';
 
 export const queueOptions = {
   removeOnSuccess: true,
@@ -15,6 +16,7 @@ export type MintData = {
   contractAddress: string;
   fromBlock: number;
   onlyMinted: boolean;
+  contractInterface: ContractInterface;
 }
 
 export type MetadataData = {
@@ -23,7 +25,11 @@ export type MetadataData = {
   uri: string;
 }
 
-export type NftSaveData = Nft[];
+export type NftSaveData = {
+  contractAddress: string;
+  transferLogs: TransferLog[];
+  contractInterface: ContractInterface;
+};
 
 export enum QueueNames {
   MINT = 'mint',

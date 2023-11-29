@@ -4,14 +4,26 @@ import { getAddress } from "ethers";
 import { logger } from "./logger";
 import { NftSaveData } from "./queue";
 import Queue from 'bee-queue';
+import { getContractInterface } from "./contract";
+
+export enum ContractInterface {
+  ERC721 = 1,
+  ERC1155 = 2,
+}
 
 export type Nft = {
   tokenId: string;
   tokenAddress: string;
   creator?: string;
   owner?: string;
+  owners?: {
+    address: string;
+    quantity: number;
+  }[];
   uri?: string;
   metadata?: any;
+  contractInterface: ContractInterface;
+  quantity?: number;
 };
 
 export const CONFIG_COLLECTION = "index_config";
@@ -34,23 +46,27 @@ export const getMongoClient = (() => {
   }
 })()
 
-export async function updateNfts(nfts: Map<string, Nft>, saveNftQueue: Queue<NftSaveData>) {
+export async function updateErc721Nfts(transferLogs: TransferLog[], contractAddress: string, saveNftQueue: Queue<NftSaveData>) {
   const batchSize = 100; // Set the desired batch size
-  const nftsIterator = nfts.entries();
   let processedCount = 0;
 
-  while (processedCount < nfts.size) {
-    const itemsToUpdate: Nft[] = [];
+  while (processedCount < transferLogs.length) {
+    const itemsToUpdate: TransferLog[] = [];
 
-    for (let i = 0; i < batchSize && processedCount < nfts.size; i++) {
-      const [key, value] = nftsIterator.next().value;
-      itemsToUpdate.push(value);
+    for (let i = 0; i < batchSize && processedCount < transferLogs.length; i++) {
+      const log = transferLogs[processedCount];
+      itemsToUpdate.push(log);
       processedCount++;
     }
 
-    await saveNftQueue.createJob(itemsToUpdate)
+    await saveNftQueue.createJob({
+      contractAddress,
+      transferLogs: itemsToUpdate,
+      contractInterface: ContractInterface.ERC721,
+    })
       .retries(2)
       .save();
+
     logger.info(`Created job for save ${itemsToUpdate.length} nfts`);
   }
 
@@ -114,4 +130,25 @@ export async function markIndexRunning(address: string) {
       upsert: true,
     }
   );
+}
+
+export async function findOrCreateIndexConfig(address: string, options?: { live: boolean }) {
+  const client = await getMongoClient();
+  const config = await client.collection(CONFIG_COLLECTION).findOne({
+    address: getAddress(address),
+  });
+  if (config) {
+    return config;
+  }
+  const contractInterface = await getContractInterface(address);
+
+  const newConfig = {
+    address: getAddress(address),
+    indexPoint: 0,
+    running: false,
+    contractInterface,
+    live: options?.live ?? false,
+  };
+  await client.collection(CONFIG_COLLECTION).insertOne(newConfig);
+  return newConfig;
 }

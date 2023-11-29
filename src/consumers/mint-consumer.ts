@@ -2,8 +2,8 @@ import { logger } from "../lib/logger";
 import { MintData, NftSaveData, QueueNames, queueOptions } from "../lib/queue";
 import Queue from 'bee-queue';
 import { getAllTransferLogs } from "../lib/scan";
-import { getNftsFromLogs } from "../lib/helper";
-import { markIndexRunning, updateIndexPoint, updateNfts } from "../lib/db";
+import { getErc1155NftsFromLogs, getErc721NftsFromLogs } from "../lib/helper";
+import { ContractInterface, markIndexRunning, updateIndexPoint, updateErc721Nfts } from "../lib/db";
 import { getCurrentBlock } from "../lib/contract";
 import { getAddress } from "ethers";
 
@@ -18,18 +18,17 @@ const saveNftQueue = new Queue<NftSaveData>(QueueNames.NFT_SAVE, queueOptions);
 */
 mintQueue.process(async (job, done) => {
   logger.info(` ==================== Processing job ${job.id} ====================`);
-  let { contractAddress, fromBlock, onlyMinted } = job.data;
+  let { contractAddress, fromBlock, onlyMinted, contractInterface } = job.data;
   await markIndexRunning(contractAddress);
   contractAddress = getAddress(contractAddress);
 
   logger.info(`Indexing collection ${contractAddress} from block ${fromBlock}`);
 
-  const logs = await getAllTransferLogs(contractAddress, onlyMinted, fromBlock);
+  const logs = await getAllTransferLogs(contractAddress, onlyMinted, fromBlock, contractInterface)
   logger.info(`Found ${logs.length} logs`);
 
   if (logs.length > 0) {
-    const nfts = getNftsFromLogs(logs, contractAddress);
-    await updateNfts(nfts, saveNftQueue);
+    await updateErc721Nfts(logs, contractAddress, saveNftQueue);
   }
 
   done()

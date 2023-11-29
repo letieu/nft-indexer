@@ -1,8 +1,7 @@
-import { ZeroAddress } from "ethers";
-import { Nft } from "./db";
+import { ContractInterface, Nft } from "./db";
 import { TransferLog } from "./scan";
 
-export function getNftsFromLogs(logs: TransferLog[], address: string) {
+export function getErc721NftsFromLogs(logs: TransferLog[], address: string): Map<string, Nft> {
   const nfts = new Map<string, Nft>();
   logs.forEach((log) => {
     const nft = nfts.get(log.tokenId);
@@ -12,9 +11,52 @@ export function getNftsFromLogs(logs: TransferLog[], address: string) {
         tokenAddress: address,
         owner: log.to,
         uri: log.uri,
+        quantity: 1,
+        contractInterface: ContractInterface.ERC721,
       });
     } else {
       nft.owner = log.to;
+    }
+  });
+
+  return nfts;
+}
+
+export function getErc1155NftsFromLogs(logs: TransferLog[], address: string): Map<string, Nft> {
+  const nfts = new Map<string, Nft>();
+
+  logs.forEach((log) => {
+    let nft = nfts.get(log.tokenId);
+
+    if (!nft) {
+      nft = {
+        tokenId: log.tokenId,
+        tokenAddress: address,
+        owners: [],
+        uri: log.uri,
+        contractInterface: ContractInterface.ERC1155,
+      };
+      nft.owners.push({
+        address: log.to,
+        quantity: log.quantity || 1,
+      });
+      nfts.set(log.tokenId, nft);
+    } else {
+      const nftOwner = nft.owners!.find((owner) => owner.address === log.to);
+      if (nftOwner) {
+        nftOwner.quantity = nftOwner.quantity + log.quantity!;
+      } else {
+        nft.owners!.push({
+          address: log.to,
+          quantity: log.quantity || 1,
+        });
+      }
+    }
+  });
+
+  nfts.forEach((nft) => {
+    if (nft.owners) {
+      nft.quantity = nft.owners.reduce((acc, owner) => acc + owner.quantity, 0);
     }
   });
 

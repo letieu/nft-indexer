@@ -140,6 +140,17 @@ paths:
           content: {}
       security:
       - bearerAuth: []
+
+  /test:
+    get:
+      tags:
+      - Test
+      summary: Test
+      responses:
+        200:
+          description: OK
+          content: {}
+
 components:
   securitySchemes:
     bearerAuth:
