@@ -4,7 +4,7 @@ import { MetadataData, NftSaveData, QueueNames, queueOptions } from "../lib/queu
 import Queue, { Job } from 'bee-queue';
 import { TransferLog } from "../lib/scan";
 import { Collection, Document } from "mongodb";
-import { getErc721NftsFromLogs } from "../lib/helper";
+import { getErc1155NftsFromLogs, getErc721NftsFromLogs } from "../lib/helper";
 
 const nftSaveQueue = new Queue<NftSaveData>(QueueNames.NFT_SAVE, queueOptions);
 const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
@@ -18,10 +18,10 @@ nftSaveQueue.process(async (job: Job<NftSaveData>, done) => {
 
   if (contractInterface === ContractInterface.ERC721) {
     await saveErc721(transferLogs, contractAddress, collection);
-  }
-
-  if (contractInterface === ContractInterface.ERC1155) {
-    // TODO: implement
+  } else if (contractInterface === ContractInterface.ERC1155) {
+    await saveErc1155(transferLogs, contractAddress, collection);
+  } else {
+    throw new Error(`Unknown contract interface ${contractInterface}`);
   }
 
   await createMetadataJobs(contractAddress, transferLogs);
@@ -78,4 +78,75 @@ async function saveErc721(transferLogs: TransferLog[], contractAddress: string, 
   });
 
   await collection.bulkWrite(writeOps);
+}
+
+async function saveErc1155(transferLogs: TransferLog[], contractAddress: string, collection: Collection<Document>) {
+  const erc1155Nfts = getErc1155NftsFromLogs(transferLogs, contractAddress);
+
+  const wirteOps = Array.from(erc1155Nfts.values()).map(async (nft) => {
+    const savedNft = await collection.findOne({
+      tokenId: nft.tokenId,
+      tokenAddress: contractAddress,
+    });
+
+    if (!savedNft) {
+      return {
+        updateOne: {
+          filter: {
+            tokenId: nft.tokenId,
+            tokenAddress: contractAddress,
+          },
+          update: {
+            $set: {
+              ...nft,
+            },
+          },
+          upsert: true,
+        }
+      }
+    }
+
+    // update owners quantity
+    const currentOwners = savedNft.owners as { address: string, quantity: number }[];
+    const newOwners = nft.owners;
+    const owners = updateOwners(currentOwners, newOwners);
+
+    return {
+      updateOne: {
+        filter: {
+          tokenId: nft.tokenId,
+          tokenAddress: contractAddress,
+        },
+        update: {
+          $set: {
+            owners,
+            quantity: owners.reduce((total, owner) => total + owner.quantity, 0),
+          },
+        },
+        upsert: true,
+      }
+    }
+  });
+
+  await collection.bulkWrite(await Promise.all(wirteOps));
+}
+
+function updateOwners(currentOwners: { address: string, quantity: number }[], newOwners: { address: string, quantity: number }[]) {
+  const owners = []
+  currentOwners.forEach((owner) => {
+    const newOwner = newOwners.find((newOwner) => newOwner.address === owner.address);
+    if (newOwner) {
+      owner.quantity = owner.quantity + newOwner.quantity;
+    }
+    owners.push(owner);
+  });
+
+  newOwners.forEach((newOwner) => {
+    const owner = currentOwners.find((owner) => owner.address === newOwner.address);
+    if (!owner) {
+      owners.push(newOwner);
+    }
+  });
+
+  return owners;
 }

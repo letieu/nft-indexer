@@ -1,9 +1,8 @@
 import { logger } from "../lib/logger";
 import { MintData, NftSaveData, QueueNames, queueOptions } from "../lib/queue";
 import Queue from 'bee-queue';
-import { getAllTransferLogs } from "../lib/scan";
-import { getErc1155NftsFromLogs, getErc721NftsFromLogs } from "../lib/helper";
-import { ContractInterface, markIndexRunning, updateIndexPoint, updateErc721Nfts } from "../lib/db";
+import { TransferLog, getAllTransferLogs } from "../lib/scan";
+import { ContractInterface, markIndexRunning, updateIndexPoint } from "../lib/db";
 import { getCurrentBlock } from "../lib/contract";
 import { getAddress } from "ethers";
 
@@ -28,7 +27,7 @@ mintQueue.process(async (job, done) => {
   logger.info(`Found ${logs.length} logs`);
 
   if (logs.length > 0) {
-    await updateErc721Nfts(logs, contractAddress, saveNftQueue);
+    await createSaveNftJobs(logs, contractAddress, saveNftQueue, contractInterface);
   }
 
   done()
@@ -57,5 +56,31 @@ mintQueue.on('error', (err) => {
   logger.error(err);
 });
 
-logger.info(`Waiting for jobs in ${QueueNames.MINT}`);
+async function createSaveNftJobs(transferLogs: TransferLog[], contractAddress: string, saveNftQueue: Queue<NftSaveData>, contractInterface: ContractInterface) {
+  const batchSize = 100; // Set the desired batch size
+  let processedCount = 0;
 
+  while (processedCount < transferLogs.length) {
+    const itemsToUpdate: TransferLog[] = [];
+
+    for (let i = 0; i < batchSize && processedCount < transferLogs.length; i++) {
+      const log = transferLogs[processedCount];
+      itemsToUpdate.push(log);
+      processedCount++;
+    }
+
+    await saveNftQueue.createJob({
+      contractAddress,
+      transferLogs: itemsToUpdate,
+      contractInterface: contractInterface,
+    })
+      .retries(2)
+      .save();
+
+    logger.info(`Created job for save ${itemsToUpdate.length} nfts`);
+  }
+
+  logger.info(`Created ${processedCount} jobs for save nfts`);
+}
+
+logger.info(`Waiting for jobs in ${QueueNames.MINT}`);

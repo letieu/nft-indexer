@@ -38,8 +38,6 @@ export async function checkAllCollection(force = false, onlyMinted = false) {
 
 export async function checkCollection(address: string, onlyMinted = true, fromBlock?: number) {
   logger.info(`Checking collection ${address}`);
-  const client = await getMongoClient();
-
   const config = await findOrCreateIndexConfig(getAddress(address));
 
   const contractInterface: ContractInterface = config?.contractInterface || ContractInterface.ERC721;

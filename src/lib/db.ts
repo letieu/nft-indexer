@@ -46,33 +46,6 @@ export const getMongoClient = (() => {
   }
 })()
 
-export async function updateErc721Nfts(transferLogs: TransferLog[], contractAddress: string, saveNftQueue: Queue<NftSaveData>) {
-  const batchSize = 100; // Set the desired batch size
-  let processedCount = 0;
-
-  while (processedCount < transferLogs.length) {
-    const itemsToUpdate: TransferLog[] = [];
-
-    for (let i = 0; i < batchSize && processedCount < transferLogs.length; i++) {
-      const log = transferLogs[processedCount];
-      itemsToUpdate.push(log);
-      processedCount++;
-    }
-
-    await saveNftQueue.createJob({
-      contractAddress,
-      transferLogs: itemsToUpdate,
-      contractInterface: ContractInterface.ERC721,
-    })
-      .retries(2)
-      .save();
-
-    logger.info(`Created job for save ${itemsToUpdate.length} nfts`);
-  }
-
-  logger.info(`Created ${processedCount} jobs for save nfts`);
-}
-
 export async function updateTransferLogs(logs: TransferLog[]) {
   logger.info(`Updating ${logs.length} transfer logs to db`);
   const client = await getMongoClient();

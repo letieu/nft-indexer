@@ -1,3 +1,4 @@
+import { ZeroAddress } from "ethers";
 import { ContractInterface, Nft } from "./db";
 import { TransferLog } from "./scan";
 
@@ -40,16 +41,34 @@ export function getErc1155NftsFromLogs(logs: TransferLog[], address: string): Ma
         address: log.to,
         quantity: log.quantity || 1,
       });
+      if (log.from !== ZeroAddress) {
+        nft.owners.push({
+          address: log.from,
+          quantity: -log.quantity! || -1,
+        });
+      }
       nfts.set(log.tokenId, nft);
     } else {
-      const nftOwner = nft.owners!.find((owner) => owner.address === log.to);
-      if (nftOwner) {
-        nftOwner.quantity = nftOwner.quantity + log.quantity!;
+      const receiver = nft.owners!.find((owner) => owner.address === log.to);
+      if (receiver) {
+        receiver.quantity = receiver.quantity + log.quantity!;
       } else {
         nft.owners!.push({
           address: log.to,
           quantity: log.quantity || 1,
         });
+      }
+
+      if (log.from !== ZeroAddress) {
+        const sender = nft.owners!.find((owner) => owner.address === log.from);
+        if (sender) {
+          sender.quantity = sender.quantity - log.quantity!;
+        } else {
+          nft.owners!.push({
+            address: log.from,
+            quantity: -log.quantity! || -1,
+          });
+        }
       }
     }
   });
