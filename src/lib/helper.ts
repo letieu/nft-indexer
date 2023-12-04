@@ -2,6 +2,8 @@ import { ZeroAddress } from "ethers";
 import { Nft } from "./db";
 import { TransferLog } from "./scan";
 
+const IPFS_GATEWAY = process.env.IPFS_GATEWAY || "https://ipfs.io";
+
 export function getNftsFromLogs(logs: TransferLog[], address: string) {
   const nfts = new Map<string, Nft>();
   logs.forEach((log) => {
@@ -27,6 +29,8 @@ export function getUriLink(rawUri: string) {
   if (uri.startsWith("ipfs://")) {
     uri = uri.replace("ipfs://", "https://ipfs.io/ipfs/");
   }
+
+  uri = uri.replace("https://ipfs.io", IPFS_GATEWAY);
 
   return uri;
 }
