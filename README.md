@@ -64,6 +64,17 @@ Follow the steps below to use the project:
 		#refresh metadata
 		ts-node src/triggers/command.ts collection update-metadata <address> <id>
 		```
+## Using with Docker
+```
+# build
+docker build -t nft-indexer .
+
+# run
+docker run -d --name nft-indexer -p 3077:3077 --env-file .env nft-indexer
+```
+
+Prebuilt image: `docker.io/letieu/nft-indexer`
+
 ## TODO:
 - [ ] Add support for retrieving NFT ownership data
 - [ ] Support import from moralis
