@@ -75,6 +75,23 @@ docker run -d --name nft-indexer -p 3077:3077 --env-file .env nft-indexer
 
 Prebuilt image: `docker.io/letieu/nft-indexer`
 
+- env:
+```env
+    - SCAN_URL: Blockscan API url, ex: https://api-testnet.polygonscan.com/api
+    - API_KEY: Blockscan API key
+    - RPC_URL: RPC url, ex: https://polygon-mumbai.blockpi.network/v1/rpc/public
+    - CHAIN_ID: Chain id, ex: 0x13881
+    - MONGODB_URI: MongoDB connection string, ex: mongodb://localhost:27017/corgi
+    - REDIS_HOST: Redis host, ex: localhost
+    - REDIS_PORT: Redis port, ex: 6379
+    - REDIS_PASSWORD: Redis password
+    - REDIS_TLS: Redis use TLS, true or false
+    - JWT_SECRET: JWT secret, ex: secret
+    - HTTP_PORT: HTTP port for API, ex: 3077
+    - IPFS_GATEWAY: https://cloudflare-ipfs.com
+    - MORALIS_API_KEY: Moralis API key, optional
+```
+
 ## TODO:
 - [ ] Add support for retrieving NFT ownership data
 - [ ] Support import from moralis
