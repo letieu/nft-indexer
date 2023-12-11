@@ -2,7 +2,9 @@ import { ZeroAddress } from "ethers";
 import { ContractInterface, Nft } from "./db";
 import { TransferLog } from "./scan";
 
-export function getErc721NftsFromLogs(logs: TransferLog[], address: string): Map<string, Nft> {
+const IPFS_GATEWAY = process.env.IPFS_GATEWAY || "https://ipfs.io";
+
+export function getNftsFromLogs(logs: TransferLog[], address: string) {
   const nfts = new Map<string, Nft>();
   logs.forEach((log) => {
     const nft = nfts.get(log.tokenId);
@@ -88,6 +90,8 @@ export function getUriLink(rawUri: string) {
   if (uri.startsWith("ipfs://")) {
     uri = uri.replace("ipfs://", "https://ipfs.io/");
   }
+
+  uri = uri.replace("https://ipfs.io", IPFS_GATEWAY);
 
   return uri;
 }

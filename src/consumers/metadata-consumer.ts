@@ -4,6 +4,7 @@ import Queue from 'bee-queue';
 import { getMetadata } from "../lib/scan";
 import { NFT_COLLECTION, getMongoClient } from "../lib/db";
 import { getAddress } from "ethers";
+import { getErc721Contract } from "../lib/contract";
 
 const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions);
 
@@ -14,9 +15,19 @@ const metadataQueue = new Queue<MetadataData>(QueueNames.METADATA, queueOptions)
 metadataQueue.process(async (job, done) => {
   logger.info(` ==================== Processing job ${job.id} ====================`);
 
-  const { tokenAddress, tokenId, uri } = job.data;
+  const { tokenAddress, tokenId } = job.data;
+  let { uri } = job.data;
+
   logger.info(`tokenAddress: ${tokenAddress}, tokenId: ${tokenId}, uri: ${uri}`);
   const db = await getMongoClient();
+
+  if (!uri) {
+    const contract = getErc721Contract(tokenAddress);
+    uri = await contract.tokenURI(tokenId).catch((err) => {
+      logger.error(err);
+      return undefined;
+    });
+  }
 
   const metadata = await getMetadata(uri);
 
@@ -29,6 +40,7 @@ metadataQueue.process(async (job, done) => {
       $set: {
         metadata,
         updatedAt: new Date(),
+        uri,
       },
     }
   );
