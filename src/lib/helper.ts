@@ -4,7 +4,7 @@ import { TransferLog } from "./scan";
 
 const IPFS_GATEWAY = process.env.IPFS_GATEWAY || "https://ipfs.io";
 
-export function getNftsFromLogs(logs: TransferLog[], address: string) {
+export function getErc721NftsFromLogs(logs: TransferLog[], address: string): Map<string, Nft> {
   const nfts = new Map<string, Nft>();
   logs.forEach((log) => {
     const nft = nfts.get(log.tokenId);
