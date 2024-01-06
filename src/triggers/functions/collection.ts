@@ -121,14 +121,25 @@ export async function updateMetadataAll(address: string, force = false) {
   }
 
   if (!force) {
-    filter['metadata'] = {
-      $exists: false,
-    }
+    // filter['metadata'] = {
+    //   $exists: false,
+    // }
+    // not exists or null
+    filter['$or'] = [
+      {
+        metadata: {
+          $exists: false,
+        },
+      },
+      {
+        metadata: null,
+      },
+    ];
   }
 
   const nfts = await client.collection(NFT_COLLECTION).find(filter).toArray();
 
-  logger.info(`Found ${nfts.length} NFTs`);
+  logger.info(`Found ${nfts.length} NFTs need to update`);
 
   for await (const nft of nfts) {
     const job = metadataQueue.createJob({
