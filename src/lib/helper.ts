@@ -87,8 +87,8 @@ export function getErc1155NftsFromLogs(logs: TransferLog[], address: string): Ma
 export function getUriLink(rawUri: string) {
   let uri = rawUri;
 
-  if (uri.startsWith("ipfs://")) {
-    uri = uri.replace("ipfs://", "https://ipfs.io/");
+  if (uri.startsWith("ipfs://")) { // ipfs://Qmxkasdf
+    uri = uri.replace("ipfs://", "https://ipfs.io/ipfs/"); // https://ipfs.io/ipfs/Qmxkasdf
   }
 
   uri = uri.replace("https://ipfs.io", IPFS_GATEWAY);
